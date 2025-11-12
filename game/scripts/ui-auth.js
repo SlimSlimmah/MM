@@ -1,21 +1,56 @@
-// scripts/ui-auth.js
-import { registerUser, loginUser, guestLogin } from './auth.js';
+import { registerUser, loginUser, guestLogin, logoutUser } from "./auth.js";
+import { auth } from "./firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("register-btn").addEventListener("click", async () => {
-    const email = document.getElementById("reg-email").value;
-    const password = document.getElementById("reg-password").value;
-    const username = document.getElementById("reg-username").value;
-    await registerUser(email, password, username);
-  });
+const loginTab = document.getElementById("login-tab");
+const registerTab = document.getElementById("register-tab");
+const loginForm = document.getElementById("login-form");
+const registerForm = document.getElementById("register-form");
+const guestBtn = document.getElementById("guest-btn");
+const authUI = document.getElementById("auth-ui");
+const profile = document.getElementById("profile");
 
-  document.getElementById("login-btn").addEventListener("click", async () => {
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-    await loginUser(email, password);
-  });
+loginTab.onclick = () => {
+  loginTab.classList.add("active");
+  registerTab.classList.remove("active");
+  loginForm.classList.add("active");
+  registerForm.classList.remove("active");
+};
 
-  document.getElementById("guest-btn").addEventListener("click", async () => {
-    await guestLogin();
-  });
+registerTab.onclick = () => {
+  registerTab.classList.add("active");
+  loginTab.classList.remove("active");
+  registerForm.classList.add("active");
+  loginForm.classList.remove("active");
+};
+
+// Auth buttons
+document.getElementById("register-btn").onclick = (e) => {
+  e.preventDefault();
+  const email = document.getElementById("reg-email").value;
+  const pass = document.getElementById("reg-password").value;
+  const username = document.getElementById("reg-username").value;
+  registerUser(email, pass, username);
+};
+
+document.getElementById("login-btn").onclick = (e) => {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value;
+  const pass = document.getElementById("login-password").value;
+  loginUser(email, pass);
+};
+
+guestBtn.onclick = () => guestLogin();
+
+// Auth state UI
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    authUI.style.display = "none";
+    profile.style.display = "flex";
+    document.getElementById("profile-name").textContent =
+      user.displayName || "Guest";
+  } else {
+    authUI.style.display = "block";
+    profile.style.display = "none";
+  }
 });
