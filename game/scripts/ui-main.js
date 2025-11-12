@@ -39,7 +39,6 @@ document.getElementById("upgrade-btn").onclick = (e) => {
   upgradeGuestAccount(email, password, username);
 };
 
-
 // Sub-tab switching logic for GAME tab
 const jobsSubTab = document.getElementById("subtab-jobs");
 const staffSubTab = document.getElementById("subtab-staff");
@@ -60,16 +59,24 @@ function switchSubTab(subTab) {
   staffContent.classList.remove("active");
   equipmentContent.classList.remove("active");
 
-  // Add active to selected sub-tab
+  // Hide all content first
+  jobsContent.style.display = "none";
+  staffContent.style.display = "none";
+  equipmentContent.style.display = "none";
+
+  // Add active to selected sub-tab and show content
   if (subTab === "jobs") {
     jobsSubTab.classList.add("active");
     jobsContent.classList.add("active");
+    jobsContent.style.display = "block";
   } else if (subTab === "staff") {
     staffSubTab.classList.add("active");
     staffContent.classList.add("active");
+    staffContent.style.display = "block";
   } else if (subTab === "equipment") {
     equipmentSubTab.classList.add("active");
     equipmentContent.classList.add("active");
+    equipmentContent.style.display = "block";
   }
 }
 
