@@ -1,1 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Idle Strategy Online</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+    input { margin: 5px; padding: 8px; width: 200px; }
+    button { margin: 5px; padding: 8px 16px; }
+    .panel { border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Idle Strategy Online</h1>
+  <div id="auth-status">Not logged in.</div>
 
+  <div class="panel">
+    <h2>Register</h2>
+    <input id="reg-username" placeholder="Username"><br>
+    <input id="reg-email" placeholder="Email"><br>
+    <input id="reg-password" type="password" placeholder="Password"><br>
+    <button id="register-btn">Register</button>
+  </div>
+
+  <div class="panel">
+    <h2>Login</h2>
+    <input id="login-email" placeholder="Email"><br>
+    <input id="login-password" type="password" placeholder="Password"><br>
+    <button id="login-btn">Login</button>
+  </div>
+
+  <div class="panel">
+    <h2>Guest</h2>
+    <button id="guest-btn">Play as Guest</button>
+  </div>
+
+  <script type="module" src="./scripts/ui-auth.js"></script>
+</body>
+</html>
