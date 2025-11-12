@@ -169,7 +169,7 @@ button:hover {
 
 /* --- SUB-TABS --- */
 .sub-tabs {
-  display: flex;
+  display: flex !important;
   justify-content: space-around;
   margin-bottom: 1rem;
   border-bottom: 1px solid #2a2a2a;
@@ -186,8 +186,8 @@ button:hover {
 }
 
 .sub-tab.active {
-  color: var(--accent);
-  border-bottom: 2px solid var(--accent);
+  color: var(--accent) !important;
+  border-bottom: 2px solid var(--accent) !important;
 }
 
 .sub-content {
@@ -199,5 +199,5 @@ button:hover {
 }
 
 .sub-tab-content.active {
-  display: block;
+  display: block !important;
 }
