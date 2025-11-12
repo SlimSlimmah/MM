@@ -12,6 +12,7 @@
   <script type="module" src="./scripts/ui-auth.js"></script>
   <script type="module" src="./scripts/ui-profile.js"></script>
   <script type="module" src="./scripts/ui-main.js"></script>
+  <script type="module" src="./scripts/staff-system.js"></script>
 
   <style>
     :root {
@@ -182,9 +183,21 @@
     </div>
 
     <div id="staff-content" class="sub-tab-content">
-      <h3>Staff</h3>
-      <p>Staff hiring and management coming soon...</p>
-    </div>
+  <h3>On the Books</h3>
+  <div id="active-slots" class="slot-container">
+    <!-- Active employee slots will be generated here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Available Employees</h3>
+  <div id="available-employees" class="employee-list">
+    <p style="opacity: 0.6; font-size: 0.9rem;">No employees available</p>
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Job Seekers</h3>
+  <div id="job-seekers" class="employee-list">
+    <!-- Job seeker cards will be generated here -->
+  </div>
+</div>
 
     <div id="equipment-content" class="sub-tab-content">
       <h3>Equipment</h3>
