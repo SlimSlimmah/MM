@@ -6,15 +6,15 @@
   <title>Idle Strategy Online</title>
   <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-    input { margin: 5px; padding: 8px; width: 200px; }
-    button { margin: 5px; padding: 8px 16px; }
-    .panel { border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin: 10px; }
+    input, button { margin: 5px; padding: 8px; }
+    .panel { border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin: 10px; width: 250px; }
   </style>
 </head>
 <body>
   <h1>Idle Strategy Online</h1>
   <div id="auth-status">Not logged in.</div>
 
+  <!-- AUTH PANELS -->
   <div class="panel">
     <h2>Register</h2>
     <input id="reg-username" placeholder="Username"><br>
@@ -35,6 +35,24 @@
     <button id="guest-btn">Play as Guest</button>
   </div>
 
+  <!-- PROFILE PANEL -->
+  <div id="profile-panel" class="panel" style="display:none;">
+    <h2>Profile</h2>
+    <p><strong>Name:</strong> <span id="profile-username"></span></p>
+    <p><strong>Level:</strong> <span id="profile-level"></span></p>
+    <p><strong>Gold:</strong> <span id="profile-gold"></span></p>
+    <button id="logout-btn">Logout</button>
+
+    <div id="upgrade-panel" style="display:none; margin-top:15px;">
+      <h3>Upgrade to Full Account</h3>
+      <input id="upgrade-username" placeholder="New Username"><br>
+      <input id="upgrade-email" placeholder="Email"><br>
+      <input id="upgrade-password" type="password" placeholder="Password"><br>
+      <button id="upgrade-btn">Upgrade</button>
+    </div>
+  </div>
+
   <script type="module" src="./scripts/ui-auth.js"></script>
+  <script type="module" src="./scripts/ui-profile.js"></script>
 </body>
 </html>
