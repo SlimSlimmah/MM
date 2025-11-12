@@ -1,4 +1,6 @@
 import { logoutUser, upgradeGuestAccount } from "./auth.js";
+import { auth } from "./firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 const gameTab = document.getElementById("tab-game");
 const accountTab = document.getElementById("tab-account");
@@ -84,18 +86,15 @@ jobsSubTab.onclick = () => switchSubTab("jobs");
 staffSubTab.onclick = () => switchSubTab("staff");
 equipmentSubTab.onclick = () => switchSubTab("equipment");
 
-// Import and initialize staff system
+// Initialize staff system when user logs in
 import { initStaffSystem } from './staff-system.js';
-
-// Initialize staff system when game tab is active
-import { auth } from "./firebase-init.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    // Initialize staff system after user is logged in
+    // Wait a bit for DOM to be ready, then initialize staff
     setTimeout(() => {
+      console.log("Initializing staff system...");
       initStaffSystem();
-    }, 500);
+    }, 100);
   }
 });
