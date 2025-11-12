@@ -2,13 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Battle Slims - Auth</title>
+  <title>Moving Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="./styles/main.css">
 
   <script type="module" src="./scripts/firebase-init.js"></script>
   <script type="module" src="./scripts/auth.js"></script>
   <script type="module" src="./scripts/ui-auth.js"></script>
   <script type="module" src="./scripts/ui-profile.js"></script>
+  <script type="module" src="./scripts/ui-main.js"></script>
 
   <style>
     :root {
@@ -156,7 +159,23 @@
       <button id="guest-btn">Play as Guest</button>
     </div>
 
-    <div id="profile">
+    <!-- Old profile section replaced with this -->
+<div id="main-frame" style="display:none;">
+  <div class="main-tabs">
+    <div class="main-tab active" id="tab-game">GAME</div>
+    <div class="main-tab" id="tab-account">ACCOUNT</div>
+  </div>
+
+  <div class="main-content">
+    <!-- GAME TAB CONTENT -->
+    <div id="game-tab" class="tab-content active">
+      <h2>Game Area</h2>
+      <p>Welcome to Battle Slims! This will later hold gameplay or idle systems.</p>
+      <p style="opacity:0.7;">(Placeholder — we’ll fill this in later.)</p>
+    </div>
+
+    <!-- ACCOUNT TAB CONTENT -->
+    <div id="account-tab" class="tab-content">
       <h2 id="profile-name"></h2>
       <p id="auth-status"></p>
       <button id="logout-btn">Logout</button>
@@ -171,6 +190,9 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
   </div>
 </body>
 </html>
