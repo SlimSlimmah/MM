@@ -201,3 +201,151 @@ button:hover {
 .sub-tab-content.active {
   display: block !important;
 }
+
+/* --- STAFF SYSTEM --- */
+.slot-container {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.employee-slot {
+  background: #2a2a2a;
+  border: 2px dashed #444;
+  border-radius: var(--radius);
+  padding: 1rem;
+  width: 120px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.employee-slot:hover {
+  border-color: var(--accent);
+  background: #333;
+}
+
+.employee-slot.filled {
+  border: 2px solid var(--accent);
+  background: #2e2e2e;
+}
+
+.employee-slot .slot-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.employee-slot .slot-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.employee-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.employee-card {
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  width: 140px;
+  transition: all 0.2s;
+}
+
+.employee-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.employee-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.employee-card .card-icon {
+  font-size: 1.5rem;
+}
+
+.employee-card .card-name {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.employee-card .card-stats {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.3rem 0;
+}
+
+.employee-card .card-price {
+  color: #ffd700;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.employee-card button {
+  width: 100%;
+  padding: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.employee-card.available {
+  border-color: #4a4a4a;
+  cursor: pointer;
+}
+
+.employee-card.available:hover {
+  border-color: var(--accent);
+}
+
+/* Modal for selecting employees */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--panel-color);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.modal-buttons button {
+  flex: 1;
+}
