@@ -83,3 +83,19 @@ function switchSubTab(subTab) {
 jobsSubTab.onclick = () => switchSubTab("jobs");
 staffSubTab.onclick = () => switchSubTab("staff");
 equipmentSubTab.onclick = () => switchSubTab("equipment");
+
+// Import and initialize staff system
+import { initStaffSystem } from './staff-system.js';
+
+// Initialize staff system when game tab is active
+import { auth } from "./firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Initialize staff system after user is logged in
+    setTimeout(() => {
+      initStaffSystem();
+    }, 500);
+  }
+});
