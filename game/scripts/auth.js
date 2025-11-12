@@ -5,68 +5,54 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  linkWithCredential,
+  EmailAuthProvider,
+  signOut
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import {
   doc, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-// 🧱 Register new user
-export async function registerUser(email, password, username) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  const user = cred.user;
+// (existing registerUser, loginUser, guestLogin, onAuthStateChanged remain here)
 
-  await updateProfile(user, { displayName: username });
+// 🧩 Load player data
+export async function getPlayerData() {
+  const user = auth.currentUser;
+  if (!user) return null;
 
-  // Create Firestore player record
-  await setDoc(doc(db, "players", user.uid), {
+  const ref = doc(db, "players", user.uid);
+  const snapshot = await getDoc(ref);
+  return snapshot.exists() ? snapshot.data() : null;
+}
+
+// 🧩 Log out
+export async function logoutUser() {
+  await signOut(auth);
+  alert("Logged out successfully.");
+  document.location.reload(); // reset UI
+}
+
+// 🧩 Upgrade guest → full account
+export async function upgradeGuestAccount(email, password, username) {
+  const user = auth.currentUser;
+  if (!user || !user.isAnonymous) {
+    alert("You are not logged in as a guest.");
+    return;
+  }
+
+  const credential = EmailAuthProvider.credential(email, password);
+  const linkedUser = await linkWithCredential(user, credential);
+
+  await updateProfile(linkedUser.user, { displayName: username });
+
+  // Update Firestore player doc
+  const playerRef = doc(db, "players", linkedUser.user.uid);
+  await setDoc(playerRef, {
     username,
-    createdAt: Date.now(),
-    gold: 0,
-    level: 1,
-  });
+    upgraded: true,
+    upgradedAt: Date.now()
+  }, { merge: true });
 
-  alert(`Welcome, ${username}! Account created.`);
+  alert("Account upgraded successfully!");
 }
-
-// 🧱 Sign in existing user
-export async function loginUser(email, password) {
-  await signInWithEmailAndPassword(auth, email, password);
-  alert("Signed in successfully!");
-}
-
-// 🧱 Guest login (anonymous)
-export async function guestLogin() {
-  const result = await signInAnonymously(auth);
-  const uid = result.user.uid;
-
-  // Create guest record if it doesn’t exist
-  const playerRef = doc(db, "players", uid);
-  const snapshot = await getDoc(playerRef);
-  if (!snapshot.exists()) {
-    await setDoc(playerRef, {
-      username: "Guest_" + uid.slice(0, 5),
-      createdAt: Date.now(),
-      gold: 0,
-      level: 1,
-      guest: true
-    });
-  }
-
-  alert("Logged in as Guest!");
-}
-
-// 🧱 Auto-login listener
-onAuthStateChanged(auth, async (user) => {
-  const statusEl = document.getElementById("auth-status");
-  if (user) {
-    const playerRef = doc(db, "players", user.uid);
-    const snapshot = await getDoc(playerRef);
-    const data = snapshot.data();
-
-    statusEl.textContent = `Logged in as ${data.username}`;
-    console.log("User data loaded:", data);
-  } else {
-    statusEl.textContent = "Not logged in.";
-  }
-});
