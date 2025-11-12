@@ -166,3 +166,38 @@ button:hover {
 .collapsible.active .collapsible-content {
   display: block;
 }
+
+/* --- SUB-TABS --- */
+.sub-tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.sub-tab {
+  flex: 1;
+  text-align: center;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  font-size: 0.9rem;
+}
+
+.sub-tab.active {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+
+.sub-content {
+  padding: 1rem 0;
+}
+
+.sub-tab-content {
+  display: none;
+}
+
+.sub-tab-content.active {
+  display: block;
+}
