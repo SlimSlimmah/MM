@@ -44,13 +44,17 @@ guestBtn.onclick = () => guestLogin();
 
 // Auth state UI
 onAuthStateChanged(auth, (user) => {
+  const authUI = document.getElementById("auth-ui");
+  const mainFrame = document.getElementById("main-frame");
+
   if (user) {
     authUI.style.display = "none";
-    profile.style.display = "flex";
+    mainFrame.style.display = "flex";
     document.getElementById("profile-name").textContent =
       user.displayName || "Guest";
   } else {
     authUI.style.display = "block";
-    profile.style.display = "none";
+    mainFrame.style.display = "none";
   }
 });
+
