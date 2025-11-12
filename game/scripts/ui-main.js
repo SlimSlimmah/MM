@@ -38,3 +38,41 @@ document.getElementById("upgrade-btn").onclick = (e) => {
   const password = document.getElementById("upgrade-password").value;
   upgradeGuestAccount(email, password, username);
 };
+
+
+// Sub-tab switching logic for GAME tab
+const jobsSubTab = document.getElementById("subtab-jobs");
+const staffSubTab = document.getElementById("subtab-staff");
+const equipmentSubTab = document.getElementById("subtab-equipment");
+
+const jobsContent = document.getElementById("jobs-content");
+const staffContent = document.getElementById("staff-content");
+const equipmentContent = document.getElementById("equipment-content");
+
+function switchSubTab(subTab) {
+  // Remove active from all sub-tabs
+  jobsSubTab.classList.remove("active");
+  staffSubTab.classList.remove("active");
+  equipmentSubTab.classList.remove("active");
+
+  // Remove active from all sub-content
+  jobsContent.classList.remove("active");
+  staffContent.classList.remove("active");
+  equipmentContent.classList.remove("active");
+
+  // Add active to selected sub-tab
+  if (subTab === "jobs") {
+    jobsSubTab.classList.add("active");
+    jobsContent.classList.add("active");
+  } else if (subTab === "staff") {
+    staffSubTab.classList.add("active");
+    staffContent.classList.add("active");
+  } else if (subTab === "equipment") {
+    equipmentSubTab.classList.add("active");
+    equipmentContent.classList.add("active");
+  }
+}
+
+jobsSubTab.onclick = () => switchSubTab("jobs");
+staffSubTab.onclick = () => switchSubTab("staff");
+equipmentSubTab.onclick = () => switchSubTab("equipment");
