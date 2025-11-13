@@ -636,27 +636,7 @@ function processAssignedJobs() {
   }
 }
 
-  if (anyCompleted) {
-    playerStats.gold += Math.floor(totalGold);
-    playerStats.exp += Math.floor(totalExp);
 
-    let leveledUp = false;
-    while (playerStats.exp >= playerStats.level * 20) {
-      playerStats.exp -= playerStats.level * 20;
-      playerStats.level++;
-      leveledUp = true;
-    }
-
-    updateStatsDisplay();
-    savePlayerStats();
-    saveAssignedJobs();
-    renderAssignedJobs(); // Re-render to update item counts in assigned jobs
-
-    if (leveledUp) {
-      showFeedback(`🎉 Level Up! Now Level ${playerStats.level}!`);
-      renderJobList();
-    }
-  }
 
 
 // Process recovering employees
