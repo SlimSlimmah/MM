@@ -503,21 +503,14 @@ button:hover {
   border-radius: var(--radius);
   padding: 0.8rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-@media (min-width: 600px) {
-  .consumable-item {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
 .consumable-info {
   flex: 1;
-  min-width: 0; /* Allows text to wrap properly */
+  min-width: 0;
 }
 
 .consumable-name {
@@ -548,22 +541,14 @@ button:hover {
 .consumable-owned {
   font-size: 0.85rem;
   color: var(--text-muted);
-  margin-bottom: 0.5rem;
-}
-
-@media (min-width: 600px) {
-  .consumable-owned {
-    margin-bottom: 0;
-    margin-right: 0.8rem;
-  }
+  white-space: nowrap;
 }
 
 .consumable-purchase {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
 }
 
 .quantity-selector {
@@ -608,82 +593,5 @@ button:hover {
   margin: 0;
   white-space: nowrap;
   font-size: 0.85rem;
-}
-
-.equipment-list {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.truck-card {
-  background: #2a2a2a;
-  border: 2px solid #3a3a3a;
-  border-radius: var(--radius);
-  padding: 0.8rem;
-  width: 140px;
-  transition: all 0.2s;
-}
-
-.truck-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.truck-card .card-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  margin-bottom: 0.5rem;
-}
-
-.truck-card .card-icon {
-  font-size: 2rem;
-}
-
-.truck-card .card-name {
-  font-weight: bold;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.truck-card .card-rarity {
-  font-size: 0.75rem;
-  margin: 0.2rem 0;
-}
-
-.truck-card .card-stats {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin: 0.3rem 0;
-  text-align: center;
-}
-
-.truck-card .card-price {
-  color: #ffd700;
-  font-weight: bold;
-  margin: 0.5rem 0;
-  text-align: center;
-}
-
-.truck-card button {
-  width: 100%;
-  padding: 0.4rem;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.truck-card.owned {
-  border-color: var(--accent);
-  cursor: default;
-}
-
-.inventory-empty {
-  opacity: 0.6;
-  font-size: 0.9rem;
-  text-align: center;
-  padding: 1rem;
-  background: #2a2a2a;
-  border-radius: var(--radius);
+  min-width: 100px;
 }
