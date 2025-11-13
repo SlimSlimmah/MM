@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Moving Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="./styles/main.css">
+
+  <script type="module" src="./scripts/firebase-init.js"></script>
+  <script type="module" src="./scripts/auth.js"></script>
+  <script type="module" src="./scripts/ui-auth.js"></script>
+  <script type="module" src="./scripts/ui-profile.js"></script>
+  <script type="module" src="./scripts/ui-main.js"></script>
+  <script type="module" src="./scripts/staff-system.js"></script>
+  <script type="module" src="./scripts/jobs-system.js"></script>
+  <script type="module" src="./scripts/chat-system.js"></script>
+  <script type="module" src="./scripts/leaderboard-system.js"></script>
+  <script type="module" src="./scripts/equipment-system.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #121212;
+      --panel-color: #1e1e1e;
+      --accent: #00bcd4;
+      --text: #f1f1f1;
+      --text-muted: #b5b5b5;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg-color);
+      color: var(--text);
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .auth-container {
+      background: var(--panel-color);
+      padding: 2rem;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+    }
+
+    form {
+      display: none;
+      flex-direction: column;
+    }
+
+    form.active {
+      display: flex;
+    }
+
+    input {
+      margin: 0.3rem 0;
+      padding: 0.6rem;
+      border: none;
+      border-radius: var(--radius);
+      background: #2b2b2b;
+      color: var(--text);
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.6rem;
+      background: var(--accent);
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+    }
+
+    #guest-btn {
+      margin-top: 1rem;
+      background: #3c3c3c;
+      color: var(--text);
+    }
+
+    #profile {
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+
+    .collapsible {
+      background: #2a2a2a;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .collapsible-header {
+      padding: 0.6rem;
+      cursor: pointer;
+      background: #333;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .collapsible-content {
+      display: none;
+      padding: 0.6rem;
+      background: #252525;
+    }
+
+    .collapsible.active .collapsible-content {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-container">
+    <div id="auth-ui">
+      <div class="tabs">
+        <div class="tab active" id="login-tab">Login</div>
+        <div class="tab" id="register-tab">Register</div>
+      </div>
+
+      <form id="login-form" class="active">
+        <input type="email" id="login-email" placeholder="Email" required>
+        <input type="password" id="login-password" placeholder="Password" required>
+        <button id="login-btn">Login</button>
+      </form>
+
+      <form id="register-form">
+        <input type="text" id="reg-username" placeholder="Username" required>
+        <input type="email" id="reg-email" placeholder="Email" required>
+        <input type="password" id="reg-password" placeholder="Password" required>
+        <button id="register-btn">Register</button>
+      </form>
+
+      <button id="guest-btn">Play as Guest</button>
+    </div>
+
+<div id="main-frame" style="display:none;">
+  <!-- Title Image -->
+  <div style="text-align: center; margin-bottom: 1rem; position: relative;">
+    <img id="game-title" src="title.png" alt="Moving Manager" width="344px" height="80px">
+  </div>
+
+  <!-- Persistent Stats Frame -->
+  <div style="background: #2a2a2a; padding: 0.8rem; border-radius: var(--radius); margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-around; align-items: center;">
+      <div style="text-align: center;">
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">GOLD</div>
+        <div style="font-size: 1.1rem; font-weight: bold; color: #ffd700;">💰 <span id="player-gold">0</span></div>
+      </div>
+      <div style="width: 1px; height: 35px; background: #3a3a3a;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">LEVEL</div>
+        <div style="font-size: 1.1rem; font-weight: bold; color: var(--accent);">⭐ <span id="player-level">1</span></div>
+      </div>
+      <div style="width: 1px; height: 35px; background: #3a3a3a;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">EXP</div>
+        <div style="font-size: 1.1rem; font-weight: bold; color: #4a9eff;">📊 <span id="player-exp">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Left Side Icons -->
+  <div style="position: absolute; left: 1rem; top: 1rem; display: flex; flex-direction: column; gap: 0.8rem;">
+    <!-- Chat Icon -->
+    <div id="chat-icon" style="position: relative; width: 50px; height: 50px; background: var(--panel-color); border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+      <span style="font-size: 1.5rem;">💬</span>
+      <div id="chat-notification" style="display: none; position: absolute; top: 0; right: 0; width: 12px; height: 12px; background: #00ff00; border-radius: 50%; border: 2px solid var(--panel-color);"></div>
+    </div>
+    
+    <!-- Leaderboard Icon -->
+    <div id="leaderboard-icon" style="width: 50px; height: 50px; background: var(--panel-color); border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+      <span style="font-size: 1.5rem;">🏆</span>
+    </div>
+  </div>
+
+  <div class="main-tabs">
+    <div class="main-tab active" id="tab-game">GAME</div>
+    <div class="main-tab" id="tab-account">ACCOUNT</div>
+  </div>
+
+  <div class="main-content">
+    <!-- GAME TAB CONTENT -->
+    <div id="game-tab" class="tab-content active">
+      <div class="sub-tabs">
+        <div class="sub-tab active" id="subtab-jobs">JOBS</div>
+        <div class="sub-tab" id="subtab-staff">STAFF</div>
+        <div class="sub-tab" id="subtab-equipment">EQUIPMENT</div>
+      </div>
+
+      <div class="sub-content">
+        <div id="jobs-content" class="sub-tab-content active">
+          <!-- Jobs UI will be generated here -->
+        </div>
+
+        <div id="staff-content" class="sub-tab-content">
+          <h3>On the Books</h3>
+          <div id="active-slots" class="slot-container">
+            <!-- Active employee slots will be generated here -->
+          </div>
+
+          <h3 style="margin-top: 1.5rem;">Available Employees</h3>
+          <div id="available-employees" class="employee-list">
+            <p style="opacity: 0.6; font-size: 0.9rem;">No employees available</p>
+          </div>
+
+          <h3 style="margin-top: 1.5rem;">Job Seekers</h3>
+          <div id="job-seekers" class="employee-list">
+            <!-- Job seeker cards will be generated here -->
+          </div>
+        </div>
+
+<div id="equipment-content" class="sub-tab-content">
+  <h3>Consumables</h3>
+  <div id="consumables-inventory" style="margin-bottom: 1rem;">
+    <!-- Owned consumables will display here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Buy Consumables</h3>
+  <div id="consumables-shop" class="equipment-shop">
+    <!-- Consumable purchase options will display here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Owned Trucks</h3>
+  <div id="owned-trucks" class="equipment-list">
+    <!-- Owned trucks will display here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Available Trucks</h3>
+  <div id="available-trucks" class="equipment-list">
+    <!-- Available trucks for purchase will display here -->
+  </div>
+</div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT TAB CONTENT -->
+    <div id="account-tab" class="tab-content">
+      <h2 id="profile-name"></h2>
+      <p id="auth-status"></p>
+      <button id="logout-btn">Logout</button>
+
+      <div class="collapsible" id="upgrade-section">
+        <div class="collapsible-header">Upgrade to Full Account</div>
+        <div class="collapsible-content">
+          <input type="text" id="upgrade-username" placeholder="Username">
+          <input type="email" id="upgrade-email" placeholder="Email">
+          <input type="password" id="upgrade-password" placeholder="Password">
+          <button id="upgrade-btn">Upgrade</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Modal -->
+<div id="chat-modal" class="modal">
+  <div class="modal-content" style="max-width: 500px; height: 600px; display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="margin: 0;">Global Chat</h3>
+      <button onclick="document.getElementById('chat-modal').classList.remove('active')" style="padding: 0.3rem 0.6rem; margin: 0;">✕</button>
+    </div>
+    
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; background: #1a1a1a; border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem;">
+      <!-- Messages will appear here -->
+    </div>
+    
+    <div style="display: flex; gap: 0.5rem;">
+      <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; margin: 0;" maxlength="200">
+      <button id="send-message-btn" style="margin: 0; padding: 0.6rem 1.2rem;">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div id="leaderboard-modal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="margin: 0;">🏆 Top Players</h3>
+      <button onclick="document.getElementById('leaderboard-modal').classList.remove('active')" style="padding: 0.3rem 0.6rem; margin: 0;">✕</button>
+    </div>
+    
+    <div id="leaderboard-list" style="max-height: 500px; overflow-y: auto;">
+      <!-- Leaderboard will appear here -->
+    </div>
+  </div>
+</div>
+
+  </div>
+</body>
+</html>
