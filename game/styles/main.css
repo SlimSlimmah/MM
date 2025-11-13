@@ -200,6 +200,11 @@ button:hover {
 
 .sub-tab-content {
   display: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .sub-tab-content.active {
