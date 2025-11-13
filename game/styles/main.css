@@ -98,6 +98,8 @@ button:hover {
   height: 700px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box; /* Include padding in width calculation */
+  overflow: hidden; /* Prevent any overflow from the frame itself */
 }
 
 .main-tabs {
@@ -124,6 +126,8 @@ button:hover {
 .main-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  padding: 0 0.5rem; /* Add some horizontal padding */
 }
 
 .tab-content {
@@ -497,14 +501,23 @@ button:hover {
   background: #2a2a2a;
   border: 2px solid #3a3a3a;
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 0.8rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+@media (min-width: 600px) {
+  .consumable-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .consumable-info {
   flex: 1;
+  min-width: 0; /* Allows text to wrap properly */
 }
 
 .consumable-name {
@@ -513,10 +526,12 @@ button:hover {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .consumable-icon {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+  flex-shrink: 0;
 }
 
 .consumable-description {
@@ -531,15 +546,24 @@ button:hover {
 }
 
 .consumable-owned {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  margin-right: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 600px) {
+  .consumable-owned {
+    margin-bottom: 0;
+    margin-right: 0.8rem;
+  }
 }
 
 .consumable-purchase {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .quantity-selector {
@@ -555,16 +579,17 @@ button:hover {
   background: #3a3a3a;
   border: none;
   color: var(--text);
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
   padding: 0;
   margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .quantity-btn:hover {
@@ -572,15 +597,17 @@ button:hover {
 }
 
 .quantity-display {
-  min-width: 40px;
+  min-width: 35px;
   text-align: center;
   font-weight: bold;
+  font-size: 0.9rem;
 }
 
 .purchase-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.8rem;
   margin: 0;
   white-space: nowrap;
+  font-size: 0.85rem;
 }
 
 .equipment-list {
