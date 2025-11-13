@@ -60,9 +60,16 @@ export const staffState = {
 
 // Initialize staff system
 export async function initStaffSystem() {
+  await loadStaffData();
+  
+  // If this is a fresh account with only the default employee, populate with 3
+  if (staffState.jobSeekers.length === 1 && staffState.jobSeekers[0].id === 'default_1') {
+    refreshJobSeekers();
+  }
+  
   renderActiveSlots();
   renderJobSeekers();
-  await loadStaffData();
+  renderAvailableEmployees();
   startRefreshTimer();
 }
 
@@ -113,15 +120,17 @@ function refreshJobSeekers() {
   // Keep default employee if it's still there
   const defaultEmp = staffState.jobSeekers.find(s => s.id === 'default_1');
   
-  // If default was hired or there are no available employees, generate 3 new
-  if (!defaultEmp && staffState.availableEmployees.length === 0) {
-    staffState.jobSeekers = [];
-    for (let i = 0; i < 3; i++) {
+  staffState.jobSeekers = [];
+  
+  // If default employee hasn't been hired yet, include it
+  if (defaultEmp) {
+    staffState.jobSeekers.push(defaultEmp);
+    // Generate 2 more to make 3 total
+    for (let i = 0; i < 2; i++) {
       staffState.jobSeekers.push(generateEmployee());
     }
-  } else if (!defaultEmp) {
-    // Just refresh the list
-    staffState.jobSeekers = [];
+  } else {
+    // Generate 3 new employees
     for (let i = 0; i < 3; i++) {
       staffState.jobSeekers.push(generateEmployee());
     }
@@ -404,9 +413,8 @@ window.hireEmployee = async function(employeeId) {
 
   showFeedback(`${seeker.name} hired successfully!`);
   
-  // If all default employees are gone, generate new seekers
-  const hasDefault = staffState.jobSeekers.find(s => s.id === 'default_1');
-  if (!hasDefault && staffState.jobSeekers.length === 0) {
+  // If this was the last job seeker, or if default was just hired, refresh the list
+  if (staffState.jobSeekers.length === 0 || employeeId === 'default_1') {
     refreshJobSeekers();
   }
 };
