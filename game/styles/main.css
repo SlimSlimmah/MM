@@ -370,3 +370,15 @@ button:hover {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-10px); }
 }
+
+/* Purchase slot styling */
+.employee-slot.purchase-slot {
+  border-style: solid;
+  border-color: #ffd700;
+  background: #2a2a1a;
+}
+
+.employee-slot.purchase-slot:hover {
+  background: #3a3a2a;
+  border-color: #ffed4e;
+}
