@@ -1,6 +1,7 @@
 import { logoutUser, upgradeGuestAccount } from "./auth.js";
 import { auth } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { initJobsSystem, refreshJobsUI } from './jobs-system.js';
 
 const gameTab = document.getElementById("tab-game");
 const accountTab = document.getElementById("tab-account");
@@ -71,6 +72,7 @@ function switchSubTab(subTab) {
     jobsSubTab.classList.add("active");
     jobsContent.classList.add("active");
     jobsContent.style.display = "block";
+    refreshJobsUI(); // Refresh jobs UI when switching to this tab
   } else if (subTab === "staff") {
     staffSubTab.classList.add("active");
     staffContent.classList.add("active");
@@ -95,6 +97,7 @@ onAuthStateChanged(auth, (user) => {
     setTimeout(() => {
       console.log("Initializing staff system...");
       initStaffSystem();
+      initJobsSystem();
     }, 100);
   }
 });
