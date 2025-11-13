@@ -5,6 +5,7 @@ import { initStaffSystem } from './staff-system.js';
 import { initJobsSystem, refreshJobsUI } from './jobs-system.js';
 import { initChatSystem } from './chat-system.js';
 import { initLeaderboardSystem } from './leaderboard-system.js';
+import { initEquipmentSystem } from './equipment-system.js';
 
 const gameTab = document.getElementById("tab-game");
 const accountTab = document.getElementById("tab-account");
@@ -91,23 +92,18 @@ jobsSubTab.onclick = () => switchSubTab("jobs");
 staffSubTab.onclick = () => switchSubTab("staff");
 equipmentSubTab.onclick = () => switchSubTab("equipment");
 
-// Initialize staff and jobs systems when user logs in
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // Wait a bit for DOM to be ready
     await new Promise(resolve => setTimeout(resolve, 100));
     
     console.log("Initializing game systems...");
     
-    // Initialize staff first and wait for it to load data
     await initStaffSystem();
-    
-    // Wait a bit more to ensure staff data is loaded
     await new Promise(resolve => setTimeout(resolve, 200));
     
-    // Then initialize other systems
     initJobsSystem();
     initChatSystem();
     initLeaderboardSystem();
+    initEquipmentSystem();
   }
 });
