@@ -485,3 +485,178 @@ button:hover {
   background-color: #333;
   border-radius: 4px;
 }
+
+/* --- EQUIPMENT SYSTEM --- */
+.equipment-shop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.consumable-item {
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.consumable-info {
+  flex: 1;
+}
+
+.consumable-name {
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.consumable-icon {
+  font-size: 1.5rem;
+}
+
+.consumable-description {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.consumable-buff {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.consumable-owned {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-right: 1rem;
+}
+
+.consumable-purchase {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #1a1a1a;
+  border-radius: var(--radius);
+  padding: 0.3rem;
+}
+
+.quantity-btn {
+  background: #3a3a3a;
+  border: none;
+  color: var(--text);
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-btn:hover {
+  background: #4a4a4a;
+}
+
+.quantity-display {
+  min-width: 40px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.purchase-btn {
+  padding: 0.5rem 1rem;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.equipment-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.truck-card {
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  width: 140px;
+  transition: all 0.2s;
+}
+
+.truck-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.truck-card .card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.truck-card .card-icon {
+  font-size: 2rem;
+}
+
+.truck-card .card-name {
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.truck-card .card-rarity {
+  font-size: 0.75rem;
+  margin: 0.2rem 0;
+}
+
+.truck-card .card-stats {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.3rem 0;
+  text-align: center;
+}
+
+.truck-card .card-price {
+  color: #ffd700;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+.truck-card button {
+  width: 100%;
+  padding: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.truck-card.owned {
+  border-color: var(--accent);
+  cursor: default;
+}
+
+.inventory-empty {
+  opacity: 0.6;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem;
+  background: #2a2a2a;
+  border-radius: var(--radius);
+}
