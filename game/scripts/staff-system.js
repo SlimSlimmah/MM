@@ -1,6 +1,7 @@
 // Staff management system
 import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { stopEmployeeJob } from './jobs-system.js';
 
 // Employee rarities with efficiency ranges
 const rarities = {
@@ -481,6 +482,9 @@ function assignEmployee(slotIndex, availableIndex) {
 function unassignEmployee(slotIndex) {
   const employee = staffState.onTheBooks[slotIndex];
   if (!employee) return;
+
+  // Stop any assigned job or recovery for this employee
+  stopEmployeeJob(employee.id);
 
   // Remove from active
   staffState.onTheBooks.splice(slotIndex, 1);

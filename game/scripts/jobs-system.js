@@ -8,8 +8,9 @@ const jobState = {
   currentJob: null,
   progress: 0,
   intervalId: null,
-  assignedJobs: {}, // { employeeId: { jobId, startTime } }
-  assignedJobsInterval: null // Interval for checking assigned jobs
+  assignedJobs: {}, // { employeeId: { jobId, startTime, employeeName, employeeIcon, efficiency } }
+  recoveringEmployees: {}, // { employeeId: { previousJobId, startTime, employeeName, employeeIcon } }
+  assignedJobsInterval: null
 };
 
 // Player stats (will be loaded from Firebase)
@@ -26,21 +27,39 @@ const jobs = {
     name: 'Packing Job',
     duration: 10000, // 10 seconds in milliseconds
     goldReward: 10,
-    expReward: 5
+    expReward: 5,
+    injuryChance: 0.05 // 5% chance per completion
   }
 };
+
+// Recovery duration
+const RECOVERY_DURATION = 30000; // 30 seconds
 
 // Initialize jobs system
 export function initJobsSystem() {
   loadPlayerStats();
   loadAssignedJobs();
   renderJobsUI();
-  startAssignedJobsInterval(); // Start checking assigned jobs
+  startAssignedJobsInterval();
 }
 
 // Check if player has employees on the books
 function hasEmployeesAssigned() {
   return staffState.onTheBooks && staffState.onTheBooks.length > 0;
+}
+
+// Function to stop an employee's job (called from staff-system when unassigning)
+export function stopEmployeeJob(employeeId) {
+  if (jobState.assignedJobs[employeeId]) {
+    delete jobState.assignedJobs[employeeId];
+    saveAssignedJobs();
+    renderJobsUI();
+  }
+  if (jobState.recoveringEmployees[employeeId]) {
+    delete jobState.recoveringEmployees[employeeId];
+    saveAssignedJobs();
+    renderJobsUI();
+  }
 }
 
 // Render the jobs UI
@@ -95,11 +114,19 @@ function renderJobsUI() {
           <!-- Assigned jobs will be rendered here -->
         </div>
       </div>
+
+      <div id="recovering-container" style="margin-top: 1.5rem; display: none;">
+        <h3>Recovering</h3>
+        <div id="recovering-list">
+          <!-- Recovering employees will be rendered here -->
+        </div>
+      </div>
     </div>
   `;
 
   renderJobList();
   renderAssignedJobs();
+  renderRecoveringEmployees();
 }
 
 // Render available jobs
@@ -227,12 +254,13 @@ function openEmployeeAssignModal(job) {
 
   const listContainer = modal.querySelector('#modal-employee-list');
   staffState.onTheBooks.forEach((emp) => {
-    // Check if already assigned
+    // Check if already assigned or recovering
     const isAssigned = Object.keys(jobState.assignedJobs).includes(emp.id);
+    const isRecovering = Object.keys(jobState.recoveringEmployees).includes(emp.id);
     
     const card = document.createElement('div');
     card.className = 'employee-card';
-    card.style.cssText = isAssigned ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;';
+    card.style.cssText = (isAssigned || isRecovering) ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;';
     
     card.innerHTML = `
       <div class="card-header">
@@ -241,9 +269,10 @@ function openEmployeeAssignModal(job) {
       </div>
       <div class="card-stats">Efficiency: ${emp.efficiency}x</div>
       ${isAssigned ? '<div style="color: var(--accent); font-size: 0.8rem;">Already Assigned</div>' : ''}
+      ${isRecovering ? '<div style="color: #ff6b6b; font-size: 0.8rem;">Recovering</div>' : ''}
     `;
 
-    if (!isAssigned) {
+    if (!isAssigned && !isRecovering) {
       card.onclick = () => {
         assignEmployeeToJob(emp, job);
         modal.remove();
@@ -313,12 +342,69 @@ function renderAssignedJobs() {
             Working on ${job.name}
           </div>
           <div style="font-size: 0.75rem; color: var(--accent); margin-top: 0.3rem;">
-            ⚙️ Running indefinitely
+            ⚙️ Running indefinitely (${assignment.efficiency.toFixed(2)}x efficiency)
           </div>
         </div>
-        <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.5rem 1rem; margin: 0;">
+        <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.5rem 1rem; margin: 0; background: #d9534f; color: white;">
           Stop
         </button>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// Render recovering employees
+function renderRecoveringEmployees() {
+  const container = document.getElementById('recovering-list');
+  const section = document.getElementById('recovering-container');
+  if (!container || !section) return;
+
+  const recoveringCount = Object.keys(jobState.recoveringEmployees).length;
+  
+  if (recoveringCount === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  container.innerHTML = '';
+
+  Object.entries(jobState.recoveringEmployees).forEach(([employeeId, recovery]) => {
+    const job = jobs[recovery.previousJobId];
+    if (!job) return;
+
+    const elapsed = Date.now() - recovery.startTime;
+    const progress = Math.min((elapsed / RECOVERY_DURATION) * 100, 100);
+    const remainingSeconds = Math.ceil((RECOVERY_DURATION - elapsed) / 1000);
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: #2a2a2a;
+      border: 2px solid #ff6b6b;
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+    `;
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+            <span style="font-size: 1.2rem;">${recovery.employeeIcon}</span>
+            <span style="font-weight: bold;">${recovery.employeeName}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            🤕 Injured from ${job.name}
+          </div>
+        </div>
+        <div style="text-align: right; color: #ff6b6b;">
+          <div style="font-size: 0.9rem;">${remainingSeconds}s</div>
+        </div>
+      </div>
+      <div style="background: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden;">
+        <div style="background: #ff6b6b; height: 100%; width: ${progress}%;"></div>
       </div>
     `;
 
@@ -333,6 +419,7 @@ window.unassignJob = function(employeeId) {
     delete jobState.assignedJobs[employeeId];
     saveAssignedJobs();
     renderAssignedJobs();
+    renderRecoveringEmployees();
     showFeedback(`${assignment.employeeName} unassigned from job`);
   }
 };
@@ -347,6 +434,8 @@ function startAssignedJobsInterval() {
   // Check every second
   jobState.assignedJobsInterval = setInterval(() => {
     processAssignedJobs();
+    processRecovering();
+    renderRecoveringEmployees(); // Update recovery UI
   }, 1000);
 }
 
@@ -365,6 +454,27 @@ function processAssignedJobs() {
     
     // Check if job duration has elapsed
     if (elapsed >= job.duration) {
+      // Check for injury
+      if (Math.random() < job.injuryChance) {
+        // Employee got injured!
+        jobState.recoveringEmployees[employeeId] = {
+          previousJobId: assignment.jobId,
+          startTime: now,
+          employeeName: assignment.employeeName,
+          employeeIcon: assignment.employeeIcon,
+          efficiency: assignment.efficiency
+        };
+        
+        // Remove from assigned jobs
+        delete jobState.assignedJobs[employeeId];
+        
+        showFeedback(`🤕 ${assignment.employeeName} was injured and is recovering!`, 'error');
+        saveAssignedJobs();
+        renderAssignedJobs();
+        renderRecoveringEmployees();
+        return;
+      }
+      
       // Award rewards
       const gold = job.goldReward * assignment.efficiency;
       const exp = job.expReward;
@@ -404,6 +514,35 @@ function processAssignedJobs() {
   }
 }
 
+// Process recovering employees
+function processRecovering() {
+  const now = Date.now();
+
+  Object.entries(jobState.recoveringEmployees).forEach(([employeeId, recovery]) => {
+    const elapsed = now - recovery.startTime;
+    
+    // Check if recovery is complete
+    if (elapsed >= RECOVERY_DURATION) {
+      // Return employee to their previous job
+      jobState.assignedJobs[employeeId] = {
+        jobId: recovery.previousJobId,
+        startTime: now,
+        employeeName: recovery.employeeName,
+        employeeIcon: recovery.employeeIcon,
+        efficiency: recovery.efficiency
+      };
+      
+      // Remove from recovering
+      delete jobState.recoveringEmployees[employeeId];
+      
+      showFeedback(`✅ ${recovery.employeeName} has recovered and returned to work!`);
+      saveAssignedJobs();
+      renderAssignedJobs();
+      renderRecoveringEmployees();
+    }
+  });
+}
+
 // Calculate offline progress
 function calculateOfflineProgress() {
   const now = Date.now();
@@ -425,6 +564,23 @@ function calculateOfflineProgress() {
 
       // Update start time to account for completed jobs
       assignment.startTime = now - (elapsed % job.duration);
+    }
+  });
+
+  // Process any completed recoveries
+  Object.entries(jobState.recoveringEmployees).forEach(([employeeId, recovery]) => {
+    const elapsed = now - recovery.startTime;
+    
+    if (elapsed >= RECOVERY_DURATION) {
+      // Return to work
+      jobState.assignedJobs[employeeId] = {
+        jobId: recovery.previousJobId,
+        startTime: now,
+        employeeName: recovery.employeeName,
+        employeeIcon: recovery.employeeIcon,
+        efficiency: recovery.efficiency
+      };
+      delete jobState.recoveringEmployees[employeeId];
     }
   });
 
@@ -624,21 +780,22 @@ async function loadPlayerStats() {
   }
 }
 
-// Save assigned jobs
+// Save assigned jobs and recovering employees
 async function saveAssignedJobs() {
   const user = auth.currentUser;
   if (!user) return;
 
   try {
     await updateDoc(doc(db, "players", user.uid), {
-      assignedJobs: jobState.assignedJobs
+      assignedJobs: jobState.assignedJobs,
+      recoveringEmployees: jobState.recoveringEmployees
     });
   } catch (err) {
     console.error("Error saving assigned jobs:", err);
   }
 }
 
-// Load assigned jobs
+// Load assigned jobs and recovering employees
 async function loadAssignedJobs() {
   const user = auth.currentUser;
   if (!user) return;
@@ -649,8 +806,11 @@ async function loadAssignedJobs() {
       const data = snapshot.data();
       if (data.assignedJobs) {
         jobState.assignedJobs = data.assignedJobs;
-        calculateOfflineProgress();
       }
+      if (data.recoveringEmployees) {
+        jobState.recoveringEmployees = data.recoveringEmployees;
+      }
+      calculateOfflineProgress();
     }
   } catch (err) {
     console.error("Error loading assigned jobs:", err);
