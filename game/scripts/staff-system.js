@@ -251,15 +251,20 @@ window.purchaseSlot_func = async function() {
     
     showFeedback(`Slot purchased! Next slot costs $${staffState.slotCost}`);
     
-    // Update gold display if on jobs tab
-    const goldEl = document.getElementById('player-gold');
-    if (goldEl) goldEl.textContent = newGold;
+    // Update gold display everywhere
+    updateAllGoldDisplays(newGold);
     
   } catch (err) {
     console.error("Error purchasing slot:", err);
     showFeedback('Error purchasing slot', 'error');
   }
 };
+
+// Helper function to update gold display everywhere
+function updateAllGoldDisplays(gold) {
+  const goldEl = document.getElementById('player-gold');
+  if (goldEl) goldEl.textContent = gold;
+}
 
 // Render available employees
 function renderAvailableEmployees() {
@@ -282,19 +287,20 @@ function renderJobSeekers() {
   const container = document.getElementById('job-seekers');
   container.innerHTML = '';
   
-  // Add refresh timer
+  // Add refresh timer - matching employee card width
   const timerDiv = document.createElement('div');
+  timerDiv.className = 'employee-card';
   timerDiv.style.cssText = `
     background: #2a2a2a;
-    padding: 0.5rem;
-    border-radius: var(--radius);
+    border: 2px solid #3a3a3a;
+    padding: 0.8rem;
     text-align: center;
-    margin-bottom: 0.5rem;
     font-size: 0.9rem;
+    width: 140px;
   `;
   timerDiv.innerHTML = `
-    <span style="color: var(--text-muted);">Next refresh in:</span>
-    <span id="refresh-timer" style="color: var(--accent); font-weight: bold; margin-left: 0.5rem;">5:00</span>
+    <div style="color: var(--text-muted); margin-bottom: 0.3rem;">Next Refresh</div>
+    <div id="refresh-timer" style="color: var(--accent); font-weight: bold; font-size: 1.1rem;">5:00</div>
   `;
   container.appendChild(timerDiv);
 
@@ -384,9 +390,8 @@ window.hireEmployee = async function(employeeId) {
       const newGold = currentGold - seeker.cost;
       await updateDoc(doc(db, "players", user.uid), { gold: newGold });
       
-      // Update gold display if visible
-      const goldEl = document.getElementById('player-gold');
-      if (goldEl) goldEl.textContent = newGold;
+      // Update gold display everywhere
+      updateAllGoldDisplays(newGold);
       
     } catch (err) {
       console.error("Error checking gold:", err);

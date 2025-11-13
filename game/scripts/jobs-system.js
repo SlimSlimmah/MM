@@ -28,7 +28,20 @@ const jobs = {
     duration: 10000, // 10 seconds in milliseconds
     goldReward: 10,
     expReward: 5,
-    injuryChance: 0.05 // 5% chance per completion
+    injuryChance: 0.05, // 5% chance per completion
+    returnAfterInjury: true, // Employee returns to this job after recovery
+    requiredLevel: 1
+  },
+  driver: {
+    id: 'driver',
+    name: 'Help a Driver',
+    duration: 30000, // 30 seconds
+    goldReward: 35,
+    expReward: 18,
+    injuryChance: 0.05, // 5% chance per completion
+    returnAfterInjury: false, // Employee does NOT return to this job after injury
+    requiredLevel: 5,
+    injuryNote: '(Injuries cause the Driver to drop you off)'
   }
 };
 
@@ -137,6 +150,9 @@ function renderJobList() {
   container.innerHTML = '';
 
   Object.values(jobs).forEach(job => {
+    // Check if job is unlocked
+    const isLocked = playerStats.level < job.requiredLevel;
+    
     const jobCard = document.createElement('div');
     jobCard.style.cssText = `
       background: #2a2a2a;
@@ -144,85 +160,94 @@ function renderJobList() {
       border-radius: var(--radius);
       padding: 1rem;
       margin-bottom: 0.5rem;
-      cursor: pointer;
+      cursor: ${isLocked ? 'not-allowed' : 'pointer'};
       transition: all 0.2s;
       user-select: none;
+      opacity: ${isLocked ? '0.5' : '1'};
     `;
 
     jobCard.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <div style="font-weight: bold; margin-bottom: 0.3rem;">${job.name}</div>
+          <div style="font-weight: bold; margin-bottom: 0.3rem;">
+            ${job.name}
+            ${isLocked ? `<span style="color: #ff6b6b; font-size: 0.8rem; margin-left: 0.5rem;">🔒 Level ${job.requiredLevel}</span>` : ''}
+          </div>
           <div style="font-size: 0.85rem; color: var(--text-muted);">
             Duration: ${job.duration / 1000}s
           </div>
+          ${job.injuryNote ? `<div style="font-size: 0.75rem; color: #ff9090; margin-top: 0.3rem;">${job.injuryNote}</div>` : ''}
         </div>
         <div style="text-align: right;">
           <div style="color: #ffd700; font-weight: bold;">+${job.goldReward} Gold</div>
           <div style="color: #4a9eff; font-size: 0.85rem;">+${job.expReward} EXP</div>
         </div>
       </div>
-      <div style="margin-top: 0.5rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-        💡 Click to start once • Hold 1s to assign employee
-      </div>
-      <div id="hold-indicator-${job.id}" style="display: none; margin-top: 0.5rem; text-align: center; color: var(--accent); font-weight: bold;">
-        ⏱️ Assigning...
-      </div>
+      ${!isLocked ? `
+        <div style="margin-top: 0.5rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+          💡 Click to start once • Hold 1s to assign employee
+        </div>
+        <div id="hold-indicator-${job.id}" style="display: none; margin-top: 0.5rem; text-align: center; color: var(--accent); font-weight: bold;">
+          ⏱️ Assigning...
+        </div>
+      ` : ''}
     `;
 
-    // Long press handling
-    let pressTimer = null;
-    let isLongPress = false;
+    if (!isLocked) {
+      // Long press handling
+      let pressTimer = null;
+      let isLongPress = false;
 
-    const startPress = () => {
-      isLongPress = false;
-      const indicator = document.getElementById(`hold-indicator-${job.id}`);
-      if (indicator) indicator.style.display = 'block';
-      
-      pressTimer = setTimeout(() => {
-        isLongPress = true;
-        openEmployeeAssignModal(job);
-      }, 1000);
-    };
+      const startPress = () => {
+        isLongPress = false;
+        const indicator = document.getElementById(`hold-indicator-${job.id}`);
+        if (indicator) indicator.style.display = 'block';
+        
+        pressTimer = setTimeout(() => {
+          isLongPress = true;
+          openEmployeeAssignModal(job);
+        }, 1000);
+      };
 
-    const endPress = () => {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-      const indicator = document.getElementById(`hold-indicator-${job.id}`);
-      if (indicator) indicator.style.display = 'none';
-      
-      if (!isLongPress) {
-        startJob(job);
-      }
-    };
+      const endPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+        const indicator = document.getElementById(`hold-indicator-${job.id}`);
+        if (indicator) indicator.style.display = 'none';
+        
+        if (!isLongPress) {
+          startJob(job);
+        }
+      };
 
-    const cancelPress = () => {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-      const indicator = document.getElementById(`hold-indicator-${job.id}`);
-      if (indicator) indicator.style.display = 'none';
-      isLongPress = false;
-    };
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+        const indicator = document.getElementById(`hold-indicator-${job.id}`);
+        if (indicator) indicator.style.display = 'none';
+        isLongPress = false;
+      };
 
-    jobCard.addEventListener('mousedown', startPress);
-    jobCard.addEventListener('mouseup', endPress);
-    jobCard.addEventListener('mouseleave', cancelPress);
-    jobCard.addEventListener('touchstart', startPress);
-    jobCard.addEventListener('touchend', endPress);
+      jobCard.addEventListener('mousedown', startPress);
+      jobCard.addEventListener('mouseup', endPress);
+      jobCard.addEventListener('mouseleave', cancelPress);
+      jobCard.addEventListener('touchstart', startPress);
+      jobCard.addEventListener('touchend', endPress);
 
-    jobCard.onmouseover = () => {
-      jobCard.style.borderColor = 'var(--accent)';
-      jobCard.style.transform = 'translateY(-2px)';
-    };
+      jobCard.onmouseover = () => {
+        jobCard.style.borderColor = 'var(--accent)';
+        jobCard.style.transform = 'translateY(-2px)';
+      };
 
-    jobCard.onmouseout = () => {
-      jobCard.style.borderColor = '#3a3a3a';
-      jobCard.style.transform = 'translateY(0)';
-    };
+      jobCard.onmouseout = () => {
+        jobCard.style.borderColor = '#3a3a3a';
+        jobCard.style.transform = 'translateY(0)';
+      };
+    }
 
     container.appendChild(jobCard);
   });
@@ -342,7 +367,7 @@ function renderAssignedJobs() {
             Working on ${job.name}
           </div>
           <div style="font-size: 0.75rem; color: var(--accent); margin-top: 0.3rem;">
-            ⚙️ Running indefinitely (${assignment.efficiency.toFixed(2)}x efficiency)
+            ⚙️ Working... (${assignment.efficiency.toFixed(2)}x efficiency)
           </div>
         </div>
         <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.5rem 1rem; margin: 0; background: #d9534f; color: white;">
@@ -372,8 +397,7 @@ function renderRecoveringEmployees() {
   container.innerHTML = '';
 
   Object.entries(jobState.recoveringEmployees).forEach(([employeeId, recovery]) => {
-    const job = jobs[recovery.previousJobId];
-    if (!job) return;
+    const job = recovery.previousJobId ? jobs[recovery.previousJobId] : null;
 
     const elapsed = Date.now() - recovery.startTime;
     const progress = Math.min((elapsed / RECOVERY_DURATION) * 100, 100);
@@ -396,8 +420,12 @@ function renderRecoveringEmployees() {
             <span style="font-weight: bold;">${recovery.employeeName}</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--text-muted);">
-            🤕 Injured from ${job.name}
+            🤕 Injured ${job ? `from ${job.name}` : ''}
           </div>
+          ${recovery.previousJobId ? 
+            '<div style="font-size: 0.75rem; color: var(--accent); margin-top: 0.2rem;">Will return to work after recovery</div>' :
+            '<div style="font-size: 0.75rem; color: #ff9090; margin-top: 0.2rem;">Will not return to previous job</div>'
+          }
         </div>
         <div style="text-align: right; color: #ff6b6b;">
           <div style="font-size: 0.9rem;">${remainingSeconds}s</div>
@@ -458,7 +486,7 @@ function processAssignedJobs() {
       if (Math.random() < job.injuryChance) {
         // Employee got injured!
         jobState.recoveringEmployees[employeeId] = {
-          previousJobId: assignment.jobId,
+          previousJobId: job.returnAfterInjury ? assignment.jobId : null, // Only save job if they return
           startTime: now,
           employeeName: assignment.employeeName,
           employeeIcon: assignment.employeeIcon,
@@ -507,9 +535,10 @@ function processAssignedJobs() {
     savePlayerStats();
     saveAssignedJobs();
 
-    // Show brief feedback
+    // Show brief feedback and re-render if leveled up (to show newly unlocked jobs)
     if (leveledUp) {
       showFeedback(`🎉 Level Up! Now Level ${playerStats.level}!`);
+      renderJobList(); // Re-render to show newly unlocked jobs
     }
   }
 }
