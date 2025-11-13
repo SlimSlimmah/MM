@@ -2,7 +2,6 @@
 import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 import { staffState } from './staff-system.js';
-import { equipmentState } from './equipment-system.js';
 import { equipmentState, updateConsumablesDisplay } from './equipment-system.js';
 
 // Define consumables to match equipment system
