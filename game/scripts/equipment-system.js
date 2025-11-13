@@ -1,6 +1,7 @@
 // Equipment management system
 import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { updateStatsDisplay, playerStats } from './jobs-system.js';
 
 // Truck rarities with efficiency ranges
 const truckRarities = {
@@ -344,7 +345,7 @@ window.purchaseConsumable = async function(itemId) {
       showFeedback(`Purchased ${item.name}! Permanent buff active.`);
     }
     
-    // Update gold display
+    // Update gold display everywhere
     updateAllGoldDisplays(newGold);
     
   } catch (err) {
@@ -467,7 +468,7 @@ window.purchaseTruck = async function(truckId) {
     
     showFeedback(`Purchased ${truck.name}!`);
     
-    // Update gold display
+    // Update gold display everywhere
     updateAllGoldDisplays(newGold);
     
     // If no more trucks available, refresh
@@ -524,8 +525,10 @@ export function hasConsumablesForJob(jobId) {
 
 // Helper function to update gold display everywhere
 function updateAllGoldDisplays(gold) {
-  const goldEl = document.getElementById('player-gold');
-  if (goldEl) goldEl.textContent = gold;
+  // Update playerStats in jobs system
+  playerStats.gold = gold;
+  // Update the display in jobs tab
+  updateStatsDisplay();
 }
 
 // Show inline feedback message

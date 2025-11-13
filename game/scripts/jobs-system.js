@@ -22,7 +22,7 @@ const jobState = {
 };
 
 // Player stats (will be loaded from Firebase)
-let playerStats = {
+export let playerStats = {
   gold: 0,
   exp: 0,
   level: 1
@@ -763,7 +763,7 @@ function completeJob(job) {
 }
 
 // Update stats display
-function updateStatsDisplay() {
+export function updateStatsDisplay() {
   const goldEl = document.getElementById('player-gold');
   const expEl = document.getElementById('player-exp');
   const levelEl = document.getElementById('player-level');
