@@ -239,7 +239,7 @@ function renderConsumablesShop() {
     itemDiv.style.opacity = isOwned ? '0.6' : '1';
     
     if (item.consumable) {
-      // Consumable items - show quantity selector
+      // Consumable items - show quantity selector below button
       const quantity = equipmentState.purchaseQuantities[id];
       const totalCost = item.cost * quantity;
       
@@ -253,16 +253,16 @@ function renderConsumablesShop() {
           <div class="consumable-buff">${item.buff}</div>
           <div style="font-size: 0.8rem; color: #ffd700; margin-top: 0.3rem;">$${item.cost} each • Consumed per task</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
           <div class="consumable-owned">Owned: ${owned}</div>
+          <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
+            Buy $${totalCost}
+          </button>
           <div class="quantity-selector">
             <button class="quantity-btn" onclick="window.adjustQuantity('${id}', -1)">-</button>
             <div class="quantity-display">${quantity}</div>
             <button class="quantity-btn" onclick="window.adjustQuantity('${id}', 1)">+</button>
           </div>
-          <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
-            Buy $${totalCost}
-          </button>
         </div>
       `;
     } else {
@@ -278,7 +278,7 @@ function renderConsumablesShop() {
           <div class="consumable-buff">${item.buff}</div>
           <div style="font-size: 0.8rem; color: #ffd700; margin-top: 0.3rem;">$${item.cost} • Permanent upgrade</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
           ${!isOwned ? `
             <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
               Purchase $${item.cost}
