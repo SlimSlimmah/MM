@@ -14,6 +14,8 @@
   <script type="module" src="./scripts/ui-main.js"></script>
   <script type="module" src="./scripts/staff-system.js"></script>
   <script type="module" src="./scripts/jobs-system.js"></script>
+  <script type="module" src="./scripts/chat-system.js"></script>
+  <script type="module" src="./scripts/leaderboard-system.js"></script>
 
   <style>
     :root {
@@ -161,8 +163,28 @@
       <button id="guest-btn">Play as Guest</button>
     </div>
 
-    <!-- Old profile section replaced with this -->
 <div id="main-frame" style="display:none;">
+  <!-- Title Image -->
+  <div style="text-align: center; margin-bottom: 1rem; position: relative;">
+    <img id="game-title" src="./assets/title.png" alt="Moving Manager" style="max-width: 100%; height: auto; display: none;" onerror="this.style.display='none';">
+    <!-- Fallback to text if image not found -->
+    <h1 id="game-title-text" style="margin: 0; color: var(--accent);">Moving Manager</h1>
+  </div>
+
+  <!-- Left Side Icons -->
+  <div style="position: absolute; left: 1rem; top: 1rem; display: flex; flex-direction: column; gap: 0.8rem;">
+    <!-- Chat Icon -->
+    <div id="chat-icon" style="position: relative; width: 50px; height: 50px; background: var(--panel-color); border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+      <span style="font-size: 1.5rem;">💬</span>
+      <div id="chat-notification" style="display: none; position: absolute; top: 0; right: 0; width: 12px; height: 12px; background: #00ff00; border-radius: 50%; border: 2px solid var(--panel-color);"></div>
+    </div>
+    
+    <!-- Leaderboard Icon -->
+    <div id="leaderboard-icon" style="width: 50px; height: 50px; background: var(--panel-color); border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+      <span style="font-size: 1.5rem;">🏆</span>
+    </div>
+  </div>
+
   <div class="main-tabs">
     <div class="main-tab active" id="tab-game">GAME</div>
     <div class="main-tab" id="tab-account">ACCOUNT</div>
@@ -170,41 +192,41 @@
 
   <div class="main-content">
     <!-- GAME TAB CONTENT -->
-<div id="game-tab" class="tab-content active">
-  <div class="sub-tabs">
-    <div class="sub-tab active" id="subtab-jobs">JOBS</div>
-    <div class="sub-tab" id="subtab-staff">STAFF</div>
-    <div class="sub-tab" id="subtab-equipment">EQUIPMENT</div>
-  </div>
+    <div id="game-tab" class="tab-content active">
+      <div class="sub-tabs">
+        <div class="sub-tab active" id="subtab-jobs">JOBS</div>
+        <div class="sub-tab" id="subtab-staff">STAFF</div>
+        <div class="sub-tab" id="subtab-equipment">EQUIPMENT</div>
+      </div>
 
-  <div class="sub-content">
-   <div id="jobs-content" class="sub-tab-content active">
-  <!-- Jobs UI will be generated here -->
-</div>
+      <div class="sub-content">
+        <div id="jobs-content" class="sub-tab-content active">
+          <!-- Jobs UI will be generated here -->
+        </div>
 
-    <div id="staff-content" class="sub-tab-content">
-  <h3>On the Books</h3>
-  <div id="active-slots" class="slot-container">
-    <!-- Active employee slots will be generated here -->
-  </div>
+        <div id="staff-content" class="sub-tab-content">
+          <h3>On the Books</h3>
+          <div id="active-slots" class="slot-container">
+            <!-- Active employee slots will be generated here -->
+          </div>
 
-  <h3 style="margin-top: 1.5rem;">Available Employees</h3>
-  <div id="available-employees" class="employee-list">
-    <p style="opacity: 0.6; font-size: 0.9rem;">No employees available</p>
-  </div>
+          <h3 style="margin-top: 1.5rem;">Available Employees</h3>
+          <div id="available-employees" class="employee-list">
+            <p style="opacity: 0.6; font-size: 0.9rem;">No employees available</p>
+          </div>
 
-  <h3 style="margin-top: 1.5rem;">Job Seekers</h3>
-  <div id="job-seekers" class="employee-list">
-    <!-- Job seeker cards will be generated here -->
-  </div>
-</div>
+          <h3 style="margin-top: 1.5rem;">Job Seekers</h3>
+          <div id="job-seekers" class="employee-list">
+            <!-- Job seeker cards will be generated here -->
+          </div>
+        </div>
 
-    <div id="equipment-content" class="sub-tab-content">
-      <h3>Equipment</h3>
-      <p>Equipment shop and inventory coming soon...</p>
+        <div id="equipment-content" class="sub-tab-content">
+          <h3>Equipment</h3>
+          <p>Equipment shop and inventory coming soon...</p>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
     <!-- ACCOUNT TAB CONTENT -->
     <div id="account-tab" class="tab-content">
@@ -221,6 +243,39 @@
           <button id="upgrade-btn">Upgrade</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Modal -->
+<div id="chat-modal" class="modal">
+  <div class="modal-content" style="max-width: 500px; height: 600px; display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="margin: 0;">Global Chat</h3>
+      <button onclick="document.getElementById('chat-modal').classList.remove('active')" style="padding: 0.3rem 0.6rem; margin: 0;">✕</button>
+    </div>
+    
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; background: #1a1a1a; border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem;">
+      <!-- Messages will appear here -->
+    </div>
+    
+    <div style="display: flex; gap: 0.5rem;">
+      <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; margin: 0;" maxlength="200">
+      <button id="send-message-btn" style="margin: 0; padding: 0.6rem 1.2rem;">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div id="leaderboard-modal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="margin: 0;">🏆 Top Players</h3>
+      <button onclick="document.getElementById('leaderboard-modal').classList.remove('active')" style="padding: 0.3rem 0.6rem; margin: 0;">✕</button>
+    </div>
+    
+    <div id="leaderboard-list" style="max-height: 500px; overflow-y: auto;">
+      <!-- Leaderboard will appear here -->
     </div>
   </div>
 </div>
