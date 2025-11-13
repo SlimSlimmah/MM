@@ -4,11 +4,11 @@ import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.
 import { staffState } from './staff-system.js';
 import { equipmentState, updateConsumablesDisplay } from './equipment-system.js';
 
-// Define consumables to match equipment system
+// At the top, define consumables locally or import them
 const consumableItems = {
   tape: { targetJob: 'packing', efficiencyBonus: 0.1, consumable: true, name: 'Packing Tape' },
   boxes: { targetJob: 'packing', efficiencyBonus: 0.15, consumable: true, name: 'Moving Boxes' },
-  dolly: { targetJob: 'driver', efficiencyBonus: 0.2, consumable: false, name: 'Hand Dolly' }
+  dolly: { targetJob: 'driver', efficiencyBonus: 0.2, consumable: false, limitedResource: true, name: 'Hand Dolly' }
 };
 
 // Job state
@@ -18,7 +18,8 @@ const jobState = {
   intervalId: null,
   assignedJobs: {},
   recoveringEmployees: {},
-  assignedJobsInterval: null
+  assignedJobsInterval: null,
+  dollysInUse: {} // Track which employees are using dollys: { employeeId: true }
 };
 
 // Player stats (will be loaded from Firebase)
@@ -314,6 +315,21 @@ function openEmployeeAssignModal(job) {
 
 // Assign employee to work on job indefinitely
 function assignEmployeeToJob(employee, job) {
+  // Check if this is a driver job and needs a dolly
+  if (job.id === 'driver') {
+    const dollysOwned = equipmentState.consumables['dolly'] || 0;
+    const dollysInUse = Object.keys(jobState.dollysInUse).length;
+    const dollysAvailable = dollysOwned - dollysInUse;
+    
+    if (dollysAvailable > 0) {
+      // Assign dolly to this employee
+      jobState.dollysInUse[employee.id] = true;
+    } else {
+      // No dollys available, can still work but without buff
+      showFeedback(`${employee.name} assigned to ${job.name} (no dolly available - reduced efficiency)`, 'error');
+    }
+  }
+  
   jobState.assignedJobs[employee.id] = {
     jobId: job.id,
     startTime: Date.now(),
@@ -350,12 +366,16 @@ function renderAssignedJobs() {
     let itemsAvailable = [];
     
     Object.entries(consumableItems).forEach(([itemId, item]) => {
-      if (item.targetJob === assignment.jobId && equipmentState.consumables[itemId] > 0) {
-        equipmentBonus += item.efficiencyBonus;
-        if (item.consumable) {
+      if (item.targetJob === assignment.jobId) {
+        if (item.limitedResource) {
+          // Check if this employee is using a dolly
+          if (jobState.dollysInUse[employeeId]) {
+            equipmentBonus += item.efficiencyBonus;
+            itemsAvailable.push(`${item.name} 🛒`);
+          }
+        } else if (item.consumable && equipmentState.consumables[itemId] > 0) {
+          equipmentBonus += item.efficiencyBonus;
           itemsAvailable.push(`${item.name} (${equipmentState.consumables[itemId]})`);
-        } else {
-          itemsAvailable.push(`${item.name}`);
         }
       }
     });
@@ -398,6 +418,27 @@ function renderAssignedJobs() {
 
     container.appendChild(card);
   });
+  
+  // Show dolly availability
+  if (equipmentState.consumables['dolly'] > 0) {
+    const dollysOwned = equipmentState.consumables['dolly'];
+    const dollysInUse = Object.keys(jobState.dollysInUse).length;
+    const dollysAvailable = dollysOwned - dollysInUse;
+    
+    const dollyInfo = document.createElement('div');
+    dollyInfo.style.cssText = `
+      background: #2a2a2a;
+      padding: 0.5rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    `;
+    dollyInfo.innerHTML = `🛒 Dollys: ${dollysAvailable}/${dollysOwned} available`;
+    
+    container.appendChild(dollyInfo);
+  }
 }
 
 // Render recovering employees
@@ -464,6 +505,11 @@ function renderRecoveringEmployees() {
 window.unassignJob = function(employeeId) {
   const assignment = jobState.assignedJobs[employeeId];
   if (assignment) {
+    // Free up dolly if this employee was using one
+    if (jobState.dollysInUse[employeeId]) {
+      delete jobState.dollysInUse[employeeId];
+    }
+    
     delete jobState.assignedJobs[employeeId];
     saveAssignedJobs();
     renderAssignedJobs();
@@ -505,11 +551,16 @@ function processAssignedJobs() {
       let itemsConsumed = false;
       
       Object.entries(consumableItems).forEach(([itemId, item]) => {
-        if (item.targetJob === assignment.jobId && equipmentState.consumables[itemId] > 0) {
-          equipmentBonus += item.efficiencyBonus;
-          
-          // Consume if consumable
-          if (item.consumable) {
+        if (item.targetJob === assignment.jobId) {
+          // For limited resources (dolly), check if this employee is using one
+          if (item.limitedResource) {
+            if (jobState.dollysInUse[employeeId]) {
+              equipmentBonus += item.efficiencyBonus;
+            }
+          } 
+          // For consumables, check if we have any and consume them
+          else if (item.consumable && equipmentState.consumables[itemId] > 0) {
+            equipmentBonus += item.efficiencyBonus;
             equipmentState.consumables[itemId]--;
             usedItems.push(item.name);
             itemsConsumed = true;
@@ -520,11 +571,16 @@ function processAssignedJobs() {
       // Save and update display if items were consumed
       if (itemsConsumed) {
         saveEquipmentState();
-        updateConsumablesDisplay(); // Update the display immediately
+        updateConsumablesDisplay();
       }
       
       // Check for injury
       if (Math.random() < job.injuryChance) {
+        // Free up dolly if injured
+        if (jobState.dollysInUse[employeeId]) {
+          delete jobState.dollysInUse[employeeId];
+        }
+        
         jobState.recoveringEmployees[employeeId] = {
           previousJobId: job.returnAfterInjury ? assignment.jobId : null,
           startTime: now,
@@ -556,6 +612,29 @@ function processAssignedJobs() {
       assignment.startTime = now;
     }
   });
+
+  if (anyCompleted) {
+    playerStats.gold += Math.floor(totalGold);
+    playerStats.exp += Math.floor(totalExp);
+
+    let leveledUp = false;
+    while (playerStats.exp >= playerStats.level * 20) {
+      playerStats.exp -= playerStats.level * 20;
+      playerStats.level++;
+      leveledUp = true;
+    }
+
+    updateStatsDisplay();
+    savePlayerStats();
+    saveAssignedJobs();
+    renderAssignedJobs();
+
+    if (leveledUp) {
+      showFeedback(`🎉 Level Up! Now Level ${playerStats.level}!`);
+      renderJobList();
+    }
+  }
+}
 
   if (anyCompleted) {
     playerStats.gold += Math.floor(totalGold);
@@ -857,7 +936,8 @@ async function saveAssignedJobs() {
   try {
     await updateDoc(doc(db, "players", user.uid), {
       assignedJobs: jobState.assignedJobs,
-      recoveringEmployees: jobState.recoveringEmployees
+      recoveringEmployees: jobState.recoveringEmployees,
+      dollysInUse: jobState.dollysInUse
     });
   } catch (err) {
     console.error("Error saving assigned jobs:", err);
@@ -878,6 +958,9 @@ async function loadAssignedJobs() {
       }
       if (data.recoveringEmployees) {
         jobState.recoveringEmployees = data.recoveringEmployees;
+      }
+      if (data.dollysInUse) {
+        jobState.dollysInUse = data.dollysInUse;
       }
       calculateOfflineProgress();
     }
