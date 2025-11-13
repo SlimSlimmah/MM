@@ -599,3 +599,8 @@ async function loadEquipmentData() {
     console.error("Error loading equipment data:", err);
   }
 }
+
+// Export render function so jobs system can update display
+export function updateConsumablesDisplay() {
+  renderConsumablesInventory();
+}

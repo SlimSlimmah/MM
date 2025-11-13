@@ -3,6 +3,7 @@ import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 import { staffState } from './staff-system.js';
 import { equipmentState } from './equipment-system.js';
+import { equipmentState, updateConsumablesDisplay } from './equipment-system.js';
 
 // Define consumables to match equipment system
 const consumableItems = {
@@ -502,6 +503,7 @@ function processAssignedJobs() {
       // Calculate equipment bonus
       let equipmentBonus = 0;
       let usedItems = [];
+      let itemsConsumed = false;
       
       Object.entries(consumableItems).forEach(([itemId, item]) => {
         if (item.targetJob === assignment.jobId && equipmentState.consumables[itemId] > 0) {
@@ -511,13 +513,15 @@ function processAssignedJobs() {
           if (item.consumable) {
             equipmentState.consumables[itemId]--;
             usedItems.push(item.name);
+            itemsConsumed = true;
           }
         }
       });
       
-      // Save equipment state if items were consumed
-      if (usedItems.length > 0) {
+      // Save and update display if items were consumed
+      if (itemsConsumed) {
         saveEquipmentState();
+        updateConsumablesDisplay(); // Update the display immediately
       }
       
       // Check for injury
@@ -568,6 +572,7 @@ function processAssignedJobs() {
     updateStatsDisplay();
     savePlayerStats();
     saveAssignedJobs();
+    renderAssignedJobs(); // Re-render to update item counts in assigned jobs
 
     if (leveledUp) {
       showFeedback(`🎉 Level Up! Now Level ${playerStats.level}!`);
