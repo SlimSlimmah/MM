@@ -657,7 +657,7 @@ function processAssignedJobs() {
       renderJobList();
     }
   }
-}
+
 
 // Process recovering employees
 function processRecovering() {
