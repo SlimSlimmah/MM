@@ -3,6 +3,8 @@ import { auth } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { initStaffSystem } from './staff-system.js';
 import { initJobsSystem, refreshJobsUI } from './jobs-system.js';
+import { initChatSystem } from './chat-system.js';
+import { initLeaderboardSystem } from './leaderboard-system.js';
 
 const gameTab = document.getElementById("tab-game");
 const accountTab = document.getElementById("tab-account");
@@ -103,7 +105,9 @@ onAuthStateChanged(auth, async (user) => {
     // Wait a bit more to ensure staff data is loaded
     await new Promise(resolve => setTimeout(resolve, 200));
     
-    // Then initialize jobs
+    // Then initialize other systems
     initJobsSystem();
+    initChatSystem();
+    initLeaderboardSystem();
   }
 });
