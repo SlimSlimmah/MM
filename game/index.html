@@ -16,6 +16,7 @@
   <script type="module" src="./scripts/jobs-system.js"></script>
   <script type="module" src="./scripts/chat-system.js"></script>
   <script type="module" src="./scripts/leaderboard-system.js"></script>
+  <script type="module" src="./scripts/equipment-system.js"></script>
 
   <style>
     :root {
@@ -166,8 +167,7 @@
 <div id="main-frame" style="display:none;">
   <!-- Title Image -->
   <div style="text-align: center; margin-bottom: 1rem; position: relative;">
-    <img id="game-title" src="title.png" alt="Moving Manager" width="364px" height="85px">
-
+    <img id="game-title" src="title.png" alt="Moving Manager" width="344px" height="80px">
   </div>
 
   <!-- Left Side Icons -->
@@ -220,10 +220,27 @@
           </div>
         </div>
 
-        <div id="equipment-content" class="sub-tab-content">
-          <h3>Equipment</h3>
-          <p>Equipment shop and inventory coming soon...</p>
-        </div>
+<div id="equipment-content" class="sub-tab-content">
+  <h3>Consumables</h3>
+  <div id="consumables-inventory" style="margin-bottom: 1rem;">
+    <!-- Owned consumables will display here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Buy Consumables</h3>
+  <div id="consumables-shop" class="equipment-shop">
+    <!-- Consumable purchase options will display here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Owned Trucks</h3>
+  <div id="owned-trucks" class="equipment-list">
+    <!-- Owned trucks will display here -->
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Available Trucks</h3>
+  <div id="available-trucks" class="equipment-list">
+    <!-- Available trucks for purchase will display here -->
+  </div>
+</div>
       </div>
     </div>
 
