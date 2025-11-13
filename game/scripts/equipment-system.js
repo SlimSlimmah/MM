@@ -48,7 +48,8 @@ const consumables = {
     buff: '+0.1x efficiency for Packing Job',
     cost: 5,
     targetJob: 'packing',
-    efficiencyBonus: 0.1
+    efficiencyBonus: 0.1,
+    consumable: true
   },
   boxes: {
     id: 'boxes',
@@ -58,17 +59,19 @@ const consumables = {
     buff: '+0.15x efficiency for Packing Job',
     cost: 10,
     targetJob: 'packing',
-    efficiencyBonus: 0.15
+    efficiencyBonus: 0.15,
+    consumable: true
   },
   dolly: {
     id: 'dolly',
     name: 'Hand Dolly',
     icon: '🛒',
-    description: 'Move heavy items easier',
+    description: 'Move heavy items easier (permanent)',
     buff: '+0.2x efficiency for Help a Driver',
-    cost: 15,
+    cost: 500,
     targetJob: 'driver',
-    efficiencyBonus: 0.2
+    efficiencyBonus: 0.2,
+    consumable: false
   }
 };
 
@@ -228,34 +231,64 @@ function renderConsumablesShop() {
   container.innerHTML = '';
   
   Object.entries(consumables).forEach(([id, item]) => {
-    const quantity = equipmentState.purchaseQuantities[id];
-    const totalCost = item.cost * quantity;
+    const owned = equipmentState.consumables[id] || 0;
+    const isOwned = !item.consumable && owned > 0;
     
     const itemDiv = document.createElement('div');
     itemDiv.className = 'consumable-item';
+    itemDiv.style.opacity = isOwned ? '0.6' : '1';
     
-    itemDiv.innerHTML = `
-      <div class="consumable-info">
-        <div class="consumable-name">
-          <span class="consumable-icon">${item.icon}</span>
-          <span>${item.name}</span>
+    if (item.consumable) {
+      // Consumable items - show quantity selector
+      const quantity = equipmentState.purchaseQuantities[id];
+      const totalCost = item.cost * quantity;
+      
+      itemDiv.innerHTML = `
+        <div class="consumable-info">
+          <div class="consumable-name">
+            <span class="consumable-icon">${item.icon}</span>
+            <span>${item.name}</span>
+          </div>
+          <div class="consumable-description">${item.description}</div>
+          <div class="consumable-buff">${item.buff}</div>
+          <div style="font-size: 0.8rem; color: #ffd700; margin-top: 0.3rem;">$${item.cost} each • Consumed per task</div>
         </div>
-        <div class="consumable-description">${item.description}</div>
-        <div class="consumable-buff">${item.buff}</div>
-        <div style="font-size: 0.8rem; color: #ffd700; margin-top: 0.3rem;">$${item.cost} each</div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 1rem;">
-        <div class="consumable-owned">Owned: ${equipmentState.consumables[id]}</div>
-        <div class="quantity-selector">
-          <button class="quantity-btn" onclick="window.adjustQuantity('${id}', -1)">-</button>
-          <div class="quantity-display">${quantity}</div>
-          <button class="quantity-btn" onclick="window.adjustQuantity('${id}', 1)">+</button>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div class="consumable-owned">Owned: ${owned}</div>
+          <div class="quantity-selector">
+            <button class="quantity-btn" onclick="window.adjustQuantity('${id}', -1)">-</button>
+            <div class="quantity-display">${quantity}</div>
+            <button class="quantity-btn" onclick="window.adjustQuantity('${id}', 1)">+</button>
+          </div>
+          <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
+            Buy $${totalCost}
+          </button>
         </div>
-        <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
-          Buy $${totalCost}
-        </button>
-      </div>
-    `;
+      `;
+    } else {
+      // Non-consumable items - one-time purchase
+      itemDiv.innerHTML = `
+        <div class="consumable-info">
+          <div class="consumable-name">
+            <span class="consumable-icon">${item.icon}</span>
+            <span>${item.name}</span>
+            ${isOwned ? '<span style="color: var(--accent); font-size: 0.8rem; margin-left: 0.5rem;">✓ OWNED</span>' : ''}
+          </div>
+          <div class="consumable-description">${item.description}</div>
+          <div class="consumable-buff">${item.buff}</div>
+          <div style="font-size: 0.8rem; color: #ffd700; margin-top: 0.3rem;">$${item.cost} • Permanent upgrade</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          ${!isOwned ? `
+            <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
+              Purchase $${item.cost}
+            </button>
+          ` : `
+            <div style="color: var(--accent); font-weight: bold;">Owned</div>
+          `}
+        </div>
+      `;
+    }
     
     container.appendChild(itemDiv);
   });
@@ -270,7 +303,14 @@ window.adjustQuantity = function(itemId, change) {
 // Purchase consumable
 window.purchaseConsumable = async function(itemId) {
   const item = consumables[itemId];
-  const quantity = equipmentState.purchaseQuantities[itemId];
+  
+  // Check if non-consumable and already owned
+  if (!item.consumable && equipmentState.consumables[itemId] > 0) {
+    showFeedback('You already own this item!', 'error');
+    return;
+  }
+  
+  const quantity = item.consumable ? equipmentState.purchaseQuantities[itemId] : 1;
   const totalCost = item.cost * quantity;
   
   const user = auth.currentUser;
@@ -298,7 +338,11 @@ window.purchaseConsumable = async function(itemId) {
     renderConsumablesInventory();
     renderConsumablesShop();
     
-    showFeedback(`Purchased ${quantity}x ${item.name}!`);
+    if (item.consumable) {
+      showFeedback(`Purchased ${quantity}x ${item.name}!`);
+    } else {
+      showFeedback(`Purchased ${item.name}! Permanent buff active.`);
+    }
     
     // Update gold display
     updateAllGoldDisplays(newGold);
@@ -439,12 +483,21 @@ window.purchaseTruck = async function(truckId) {
 
 // Consume an item (called when a job completes)
 export function consumeItem(itemId) {
-  if (equipmentState.consumables[itemId] > 0) {
+  const item = consumables[itemId];
+  
+  // Only consume if it's a consumable item
+  if (item && item.consumable && equipmentState.consumables[itemId] > 0) {
     equipmentState.consumables[itemId]--;
     saveEquipmentData();
     renderConsumablesInventory();
     return true;
   }
+  
+  // Non-consumable items just check if owned
+  if (item && !item.consumable && equipmentState.consumables[itemId] > 0) {
+    return true;
+  }
+  
   return false;
 }
 

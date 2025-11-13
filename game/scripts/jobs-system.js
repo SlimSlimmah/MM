@@ -2,14 +2,22 @@
 import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 import { staffState } from './staff-system.js';
+import { equipmentState } from './equipment-system.js';
+
+// Define consumables to match equipment system
+const consumableItems = {
+  tape: { targetJob: 'packing', efficiencyBonus: 0.1, consumable: true, name: 'Packing Tape' },
+  boxes: { targetJob: 'packing', efficiencyBonus: 0.15, consumable: true, name: 'Moving Boxes' },
+  dolly: { targetJob: 'driver', efficiencyBonus: 0.2, consumable: false, name: 'Hand Dolly' }
+};
 
 // Job state
 const jobState = {
   currentJob: null,
   progress: 0,
   intervalId: null,
-  assignedJobs: {}, // { employeeId: { jobId, startTime, employeeName, employeeIcon, efficiency } }
-  recoveringEmployees: {}, // { employeeId: { previousJobId, startTime, employeeName, employeeIcon } }
+  assignedJobs: {},
+  recoveringEmployees: {},
   assignedJobsInterval: null
 };
 
@@ -25,28 +33,28 @@ const jobs = {
   packing: {
     id: 'packing',
     name: 'Packing Job',
-    duration: 10000, // 10 seconds in milliseconds
+    duration: 10000,
     goldReward: 10,
     expReward: 5,
-    injuryChance: 0.05, // 5% chance per completion
-    returnAfterInjury: true, // Employee returns to this job after recovery
+    injuryChance: 0.05,
+    returnAfterInjury: true,
     requiredLevel: 1
   },
   driver: {
     id: 'driver',
     name: 'Help a Driver',
-    duration: 30000, // 30 seconds
+    duration: 30000,
     goldReward: 35,
     expReward: 18,
-    injuryChance: 0.05, // 5% chance per completion
-    returnAfterInjury: false, // Employee does NOT return to this job after injury
+    injuryChance: 0.05,
+    returnAfterInjury: false,
     requiredLevel: 5,
     injuryNote: '(Injuries cause the Driver to drop you off)'
   }
 };
 
 // Recovery duration
-const RECOVERY_DURATION = 30000; // 30 seconds
+const RECOVERY_DURATION = 30000;
 
 // Initialize jobs system
 export function initJobsSystem() {
@@ -91,7 +99,6 @@ function renderJobsUI() {
     return;
   }
 
-  // Player has employees, show job interface
   container.innerHTML = `
     <div style="padding: 1rem;">
       <div style="background: #2a2a2a; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem;">
@@ -105,9 +112,7 @@ function renderJobsUI() {
       </div>
 
       <h3>Available Jobs</h3>
-      <div id="job-list">
-        <!-- Jobs will be rendered here -->
-      </div>
+      <div id="job-list"></div>
 
       <div id="active-job-container" style="display: none; margin-top: 1rem;">
         <div style="background: #2a2a2a; padding: 1rem; border-radius: var(--radius);">
@@ -123,16 +128,12 @@ function renderJobsUI() {
 
       <div id="assigned-jobs-container" style="margin-top: 1.5rem;">
         <h3>Assigned Jobs</h3>
-        <div id="assigned-jobs-list">
-          <!-- Assigned jobs will be rendered here -->
-        </div>
+        <div id="assigned-jobs-list"></div>
       </div>
 
       <div id="recovering-container" style="margin-top: 1.5rem; display: none;">
         <h3>Recovering</h3>
-        <div id="recovering-list">
-          <!-- Recovering employees will be rendered here -->
-        </div>
+        <div id="recovering-list"></div>
       </div>
     </div>
   `;
@@ -150,7 +151,6 @@ function renderJobList() {
   container.innerHTML = '';
 
   Object.values(jobs).forEach(job => {
-    // Check if job is unlocked
     const isLocked = playerStats.level < job.requiredLevel;
     
     const jobCard = document.createElement('div');
@@ -194,7 +194,6 @@ function renderJobList() {
     `;
 
     if (!isLocked) {
-      // Long press handling
       let pressTimer = null;
       let isLongPress = false;
 
@@ -279,7 +278,6 @@ function openEmployeeAssignModal(job) {
 
   const listContainer = modal.querySelector('#modal-employee-list');
   staffState.onTheBooks.forEach((emp) => {
-    // Check if already assigned or recovering
     const isAssigned = Object.keys(jobState.assignedJobs).includes(emp.id);
     const isRecovering = Object.keys(jobState.recoveringEmployees).includes(emp.id);
     
@@ -347,6 +345,23 @@ function renderAssignedJobs() {
     const job = jobs[assignment.jobId];
     if (!job) return;
 
+    // Calculate equipment bonus for this job
+    let equipmentBonus = 0;
+    let itemsAvailable = [];
+    
+    Object.entries(consumableItems).forEach(([itemId, item]) => {
+      if (item.targetJob === assignment.jobId && equipmentState.consumables[itemId] > 0) {
+        equipmentBonus += item.efficiencyBonus;
+        if (item.consumable) {
+          itemsAvailable.push(`${item.name} (${equipmentState.consumables[itemId]})`);
+        } else {
+          itemsAvailable.push(`${item.name}`);
+        }
+      }
+    });
+    
+    const totalEfficiency = assignment.efficiency + equipmentBonus;
+
     const card = document.createElement('div');
     card.style.cssText = `
       background: #2a2a2a;
@@ -367,8 +382,13 @@ function renderAssignedJobs() {
             Working on ${job.name}
           </div>
           <div style="font-size: 0.75rem; color: var(--accent); margin-top: 0.3rem;">
-            ⚙️ Working... (${assignment.efficiency.toFixed(2)}x efficiency)
+            ⚙️ Running indefinitely (${totalEfficiency.toFixed(2)}x total efficiency)
           </div>
+          ${itemsAvailable.length > 0 ? `
+            <div style="font-size: 0.7rem; color: #90ee90; margin-top: 0.2rem;">
+              📦 Using: ${itemsAvailable.join(', ')}
+            </div>
+          ` : ''}
         </div>
         <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.5rem 1rem; margin: 0; background: #d9534f; color: white;">
           Stop
@@ -454,16 +474,14 @@ window.unassignJob = function(employeeId) {
 
 // Start interval to check assigned jobs and award rewards in real-time
 function startAssignedJobsInterval() {
-  // Clear any existing interval
   if (jobState.assignedJobsInterval) {
     clearInterval(jobState.assignedJobsInterval);
   }
 
-  // Check every second
   jobState.assignedJobsInterval = setInterval(() => {
     processAssignedJobs();
     processRecovering();
-    renderRecoveringEmployees(); // Update recovery UI
+    renderRecoveringEmployees();
   }, 1000);
 }
 
@@ -480,20 +498,38 @@ function processAssignedJobs() {
 
     const elapsed = now - assignment.startTime;
     
-    // Check if job duration has elapsed
     if (elapsed >= job.duration) {
+      // Calculate equipment bonus
+      let equipmentBonus = 0;
+      let usedItems = [];
+      
+      Object.entries(consumableItems).forEach(([itemId, item]) => {
+        if (item.targetJob === assignment.jobId && equipmentState.consumables[itemId] > 0) {
+          equipmentBonus += item.efficiencyBonus;
+          
+          // Consume if consumable
+          if (item.consumable) {
+            equipmentState.consumables[itemId]--;
+            usedItems.push(item.name);
+          }
+        }
+      });
+      
+      // Save equipment state if items were consumed
+      if (usedItems.length > 0) {
+        saveEquipmentState();
+      }
+      
       // Check for injury
       if (Math.random() < job.injuryChance) {
-        // Employee got injured!
         jobState.recoveringEmployees[employeeId] = {
-          previousJobId: job.returnAfterInjury ? assignment.jobId : null, // Only save job if they return
+          previousJobId: job.returnAfterInjury ? assignment.jobId : null,
           startTime: now,
           employeeName: assignment.employeeName,
           employeeIcon: assignment.employeeIcon,
           efficiency: assignment.efficiency
         };
         
-        // Remove from assigned jobs
         delete jobState.assignedJobs[employeeId];
         
         showFeedback(`🤕 ${assignment.employeeName} was injured and is recovering!`, 'error');
@@ -503,15 +539,17 @@ function processAssignedJobs() {
         return;
       }
       
+      // Calculate total efficiency
+      const totalEfficiency = assignment.efficiency + equipmentBonus;
+      
       // Award rewards
-      const gold = job.goldReward * assignment.efficiency;
+      const gold = job.goldReward * totalEfficiency;
       const exp = job.expReward;
       
       totalGold += gold;
       totalExp += exp;
       anyCompleted = true;
 
-      // Reset start time for next cycle
       assignment.startTime = now;
     }
   });
@@ -520,7 +558,6 @@ function processAssignedJobs() {
     playerStats.gold += Math.floor(totalGold);
     playerStats.exp += Math.floor(totalExp);
 
-    // Check for level ups
     let leveledUp = false;
     while (playerStats.exp >= playerStats.level * 20) {
       playerStats.exp -= playerStats.level * 20;
@@ -528,17 +565,13 @@ function processAssignedJobs() {
       leveledUp = true;
     }
 
-    // Update UI
     updateStatsDisplay();
-    
-    // Save everything
     savePlayerStats();
     saveAssignedJobs();
 
-    // Show brief feedback and re-render if leveled up (to show newly unlocked jobs)
     if (leveledUp) {
       showFeedback(`🎉 Level Up! Now Level ${playerStats.level}!`);
-      renderJobList(); // Re-render to show newly unlocked jobs
+      renderJobList();
     }
   }
 }
@@ -550,21 +583,22 @@ function processRecovering() {
   Object.entries(jobState.recoveringEmployees).forEach(([employeeId, recovery]) => {
     const elapsed = now - recovery.startTime;
     
-    // Check if recovery is complete
     if (elapsed >= RECOVERY_DURATION) {
-      // Return employee to their previous job
-      jobState.assignedJobs[employeeId] = {
-        jobId: recovery.previousJobId,
-        startTime: now,
-        employeeName: recovery.employeeName,
-        employeeIcon: recovery.employeeIcon,
-        efficiency: recovery.efficiency
-      };
+      if (recovery.previousJobId) {
+        jobState.assignedJobs[employeeId] = {
+          jobId: recovery.previousJobId,
+          startTime: now,
+          employeeName: recovery.employeeName,
+          employeeIcon: recovery.employeeIcon,
+          efficiency: recovery.efficiency
+        };
+        showFeedback(`✅ ${recovery.employeeName} has recovered and returned to work!`);
+      } else {
+        showFeedback(`✅ ${recovery.employeeName} has recovered!`);
+      }
       
-      // Remove from recovering
       delete jobState.recoveringEmployees[employeeId];
       
-      showFeedback(`✅ ${recovery.employeeName} has recovered and returned to work!`);
       saveAssignedJobs();
       renderAssignedJobs();
       renderRecoveringEmployees();
@@ -591,24 +625,23 @@ function calculateOfflineProgress() {
       totalExp += jobsCompleted * job.expReward;
       completedJobs += jobsCompleted;
 
-      // Update start time to account for completed jobs
       assignment.startTime = now - (elapsed % job.duration);
     }
   });
 
-  // Process any completed recoveries
   Object.entries(jobState.recoveringEmployees).forEach(([employeeId, recovery]) => {
     const elapsed = now - recovery.startTime;
     
     if (elapsed >= RECOVERY_DURATION) {
-      // Return to work
-      jobState.assignedJobs[employeeId] = {
-        jobId: recovery.previousJobId,
-        startTime: now,
-        employeeName: recovery.employeeName,
-        employeeIcon: recovery.employeeIcon,
-        efficiency: recovery.efficiency
-      };
+      if (recovery.previousJobId) {
+        jobState.assignedJobs[employeeId] = {
+          jobId: recovery.previousJobId,
+          startTime: now,
+          employeeName: recovery.employeeName,
+          employeeIcon: recovery.employeeIcon,
+          efficiency: recovery.efficiency
+        };
+      }
       delete jobState.recoveringEmployees[employeeId];
     }
   });
@@ -617,7 +650,6 @@ function calculateOfflineProgress() {
     playerStats.gold += Math.floor(totalGold);
     playerStats.exp += Math.floor(totalExp);
 
-    // Check for level ups
     let leveledUp = false;
     while (playerStats.exp >= playerStats.level * 20) {
       playerStats.exp -= playerStats.level * 20;
@@ -628,7 +660,6 @@ function calculateOfflineProgress() {
     savePlayerStats();
     saveAssignedJobs();
 
-    // Show offline progress notification
     showFeedback(`Offline Progress: ${completedJobs} jobs completed! +${Math.floor(totalGold)} Gold, +${Math.floor(totalExp)} EXP${leveledUp ? ', Level Up!' : ''}`);
   }
 }
@@ -649,13 +680,11 @@ function startJob(job) {
   jobState.currentJob = job;
   jobState.progress = 0;
 
-  // Hide job list, show active job
   document.getElementById('job-list').style.display = 'none';
   const activeContainer = document.getElementById('active-job-container');
   activeContainer.style.display = 'block';
   document.getElementById('active-job-name').textContent = job.name;
 
-  // Start progress
   const startTime = Date.now();
   const duration = job.duration;
 
@@ -683,17 +712,14 @@ function updateProgressBar(progress) {
 
 // Complete a job
 function completeJob(job) {
-  // Clear interval
   if (jobState.intervalId) {
     clearInterval(jobState.intervalId);
     jobState.intervalId = null;
   }
 
-  // Award rewards
   playerStats.gold += job.goldReward;
   playerStats.exp += job.expReward;
 
-  // Check for level up (simple formula: 20 exp per level)
   let leveledUp = false;
   const expNeeded = playerStats.level * 20;
   if (playerStats.exp >= expNeeded) {
@@ -702,10 +728,8 @@ function completeJob(job) {
     leveledUp = true;
   }
 
-  // Save to Firebase
   savePlayerStats();
 
-  // Show rewards in the progress bar area
   const activeContainer = document.getElementById('active-job-container');
   if (activeContainer) {
     activeContainer.innerHTML = `
@@ -726,11 +750,9 @@ function completeJob(job) {
     `;
   }
 
-  // Reset job state
   jobState.currentJob = null;
   jobState.progress = 0;
 
-  // Wait 1 second, then show job list again
   setTimeout(() => {
     renderJobsUI();
   }, 1000);
@@ -769,6 +791,20 @@ function showFeedback(message, type = 'success') {
     feedback.style.animation = 'fadeOut 0.3s';
     setTimeout(() => feedback.remove(), 300);
   }, 3000);
+}
+
+// Save equipment state (called when consuming items)
+async function saveEquipmentState() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    await updateDoc(doc(db, "players", user.uid), {
+      'equipmentData.consumables': equipmentState.consumables
+    });
+  } catch (err) {
+    console.error("Error saving equipment state:", err);
+  }
 }
 
 // Save player stats to Firebase
