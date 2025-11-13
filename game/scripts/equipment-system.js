@@ -255,7 +255,6 @@ function renderConsumablesShop() {
           <div style="font-size: 0.8rem; color: #ffd700; margin-top: 0.3rem;">$${item.cost} each • Consumed per task</div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
-          <div class="consumable-owned">Owned: ${owned}</div>
           <button class="purchase-btn" onclick="window.purchaseConsumable('${id}')">
             Buy $${totalCost}
           </button>
