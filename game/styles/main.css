@@ -349,3 +349,13 @@ button:hover {
 .modal-buttons button {
   flex: 1;
 }
+
+/* Pulse animation for level up */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
