@@ -102,16 +102,6 @@ function renderJobsUI() {
 
   container.innerHTML = `
     <div style="padding: 1rem;">
-      <div style="background: #2a2a2a; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-          <span>💰 Gold: <strong id="player-gold">${playerStats.gold}</strong></span>
-          <span>⭐ Level: <strong id="player-level">${playerStats.level}</strong></span>
-        </div>
-        <div style="margin-top: 0.5rem;">
-          <span>📊 EXP: <strong id="player-exp">${playerStats.exp}</strong></span>
-        </div>
-      </div>
-
       <h3>Available Jobs</h3>
       <div id="job-list"></div>
 
@@ -357,6 +347,8 @@ function renderAssignedJobs() {
 
   container.innerHTML = '';
 
+  const now = Date.now();
+
   Object.entries(jobState.assignedJobs).forEach(([employeeId, assignment]) => {
     const job = jobs[assignment.jobId];
     if (!job) return;
@@ -381,6 +373,14 @@ function renderAssignedJobs() {
     });
     
     const totalEfficiency = assignment.efficiency + equipmentBonus;
+    
+    // Calculate current job cycle progress
+    const duration = job.duration / totalEfficiency;
+    const elapsed = now - assignment.startTime;
+    const currentCycleElapsed = elapsed % duration;
+    const progress = Math.min((currentCycleElapsed / duration) * 100, 100);
+    const remainingTime = duration - currentCycleElapsed;
+    const remainingSeconds = Math.ceil(remainingTime / 1000);
 
     const card = document.createElement('div');
     card.style.cssText = `
@@ -392,17 +392,14 @@ function renderAssignedJobs() {
     `;
 
     card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+        <div style="flex: 1;">
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
             <span style="font-size: 1.2rem;">${assignment.employeeIcon}</span>
             <span style="font-weight: bold;">${assignment.employeeName}</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--text-muted);">
-            Working on ${job.name}
-          </div>
-          <div style="font-size: 0.75rem; color: var(--accent); margin-top: 0.3rem;">
-            ⚙️ Running indefinitely (${totalEfficiency.toFixed(2)}x total efficiency)
+            ${job.name} • ${totalEfficiency.toFixed(2)}x speed
           </div>
           ${itemsAvailable.length > 0 ? `
             <div style="font-size: 0.7rem; color: #90ee90; margin-top: 0.2rem;">
@@ -410,9 +407,20 @@ function renderAssignedJobs() {
             </div>
           ` : ''}
         </div>
-        <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.5rem 1rem; margin: 0; background: #d9534f; color: white;">
-          Stop
-        </button>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            ${remainingSeconds}s
+          </div>
+          <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.4rem 0.8rem; margin: 0; background: #d9534f; color: white; font-size: 0.85rem;">
+            Stop
+          </button>
+        </div>
+      </div>
+      <div style="background: #1a1a1a; height: 20px; border-radius: 10px; overflow: hidden;">
+        <div style="background: var(--accent); height: 100%; width: ${progress}%; transition: width 0.3s linear;"></div>
+      </div>
+      <div style="text-align: center; margin-top: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
+        ${Math.floor(progress)}% • Repeating indefinitely
       </div>
     `;
 
@@ -527,6 +535,7 @@ function startAssignedJobsInterval() {
   jobState.assignedJobsInterval = setInterval(() => {
     processAssignedJobs();
     processRecovering();
+    renderAssignedJobs();
     renderRecoveringEmployees();
   }, 1000);
 }
