@@ -203,25 +203,46 @@ function completeJob(job) {
   playerStats.exp += job.expReward;
 
   // Check for level up (simple formula: 20 exp per level)
+  let leveledUp = false;
   const expNeeded = playerStats.level * 20;
   if (playerStats.exp >= expNeeded) {
     playerStats.level++;
     playerStats.exp -= expNeeded;
-    alert(`🎉 Level Up! You are now level ${playerStats.level}!`);
+    leveledUp = true;
   }
 
   // Save to Firebase
   savePlayerStats();
 
-  // Show completion message
-  alert(`✅ ${job.name} Complete!\n+${job.goldReward} Gold\n+${job.expReward} EXP`);
+  // Show rewards in the progress bar area
+  const activeContainer = document.getElementById('active-job-container');
+  if (activeContainer) {
+    activeContainer.innerHTML = `
+      <div style="background: #2a2a2a; padding: 2rem; border-radius: var(--radius); text-align: center;">
+        <div style="font-size: 1.5rem; margin-bottom: 1rem;">✅ Complete!</div>
+        <div style="font-size: 1.2rem; color: #ffd700; margin: 0.5rem 0;">
+          +${job.goldReward} Gold
+        </div>
+        <div style="font-size: 1rem; color: #4a9eff; margin: 0.5rem 0;">
+          +${job.expReward} EXP
+        </div>
+        ${leveledUp ? `
+          <div style="font-size: 1.1rem; color: var(--accent); margin-top: 1rem; animation: pulse 0.5s;">
+            🎉 Level Up! Now Level ${playerStats.level}!
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
 
   // Reset job state
   jobState.currentJob = null;
   jobState.progress = 0;
 
-  // Refresh UI
-  renderJobsUI();
+  // Wait 1 second, then show job list again
+  setTimeout(() => {
+    renderJobsUI();
+  }, 1000);
 }
 
 // Save player stats to Firebase
