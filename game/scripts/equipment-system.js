@@ -606,4 +606,5 @@ async function loadEquipmentData() {
 // Export render function so jobs system can update display
 export function updateConsumablesDisplay() {
   renderConsumablesInventory();
+  renderConsumablesShop(); // Also update the shop to show current owned counts
 }
