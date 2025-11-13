@@ -8,7 +8,8 @@ const jobState = {
   currentJob: null,
   progress: 0,
   intervalId: null,
-  assignedJobs: {} // { employeeId: { jobId, startTime } }
+  assignedJobs: {}, // { employeeId: { jobId, startTime } }
+  assignedJobsInterval: null // Interval for checking assigned jobs
 };
 
 // Player stats (will be loaded from Firebase)
@@ -34,6 +35,7 @@ export function initJobsSystem() {
   loadPlayerStats();
   loadAssignedJobs();
   renderJobsUI();
+  startAssignedJobsInterval(); // Start checking assigned jobs
 }
 
 // Check if player has employees on the books
@@ -71,9 +73,6 @@ function renderJobsUI() {
       </div>
 
       <h3>Available Jobs</h3>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-        Click to start a job, or hold for 1 second to assign an employee
-      </p>
       <div id="job-list">
         <!-- Jobs will be rendered here -->
       </div>
@@ -136,8 +135,11 @@ function renderJobList() {
           <div style="color: #4a9eff; font-size: 0.85rem;">+${job.expReward} EXP</div>
         </div>
       </div>
-      <div id="hold-indicator-${job.id}" style="display: none; margin-top: 0.5rem; text-align: center; color: var(--accent);">
-        Hold to assign employee...
+      <div style="margin-top: 0.5rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+        💡 Click to start once • Hold 1s to assign employee
+      </div>
+      <div id="hold-indicator-${job.id}" style="display: none; margin-top: 0.5rem; text-align: center; color: var(--accent); font-weight: bold;">
+        ⏱️ Assigning...
       </div>
     `;
 
@@ -335,6 +337,73 @@ window.unassignJob = function(employeeId) {
   }
 };
 
+// Start interval to check assigned jobs and award rewards in real-time
+function startAssignedJobsInterval() {
+  // Clear any existing interval
+  if (jobState.assignedJobsInterval) {
+    clearInterval(jobState.assignedJobsInterval);
+  }
+
+  // Check every second
+  jobState.assignedJobsInterval = setInterval(() => {
+    processAssignedJobs();
+  }, 1000);
+}
+
+// Process assigned jobs and award rewards
+function processAssignedJobs() {
+  const now = Date.now();
+  let totalGold = 0;
+  let totalExp = 0;
+  let anyCompleted = false;
+
+  Object.entries(jobState.assignedJobs).forEach(([employeeId, assignment]) => {
+    const job = jobs[assignment.jobId];
+    if (!job) return;
+
+    const elapsed = now - assignment.startTime;
+    
+    // Check if job duration has elapsed
+    if (elapsed >= job.duration) {
+      // Award rewards
+      const gold = job.goldReward * assignment.efficiency;
+      const exp = job.expReward;
+      
+      totalGold += gold;
+      totalExp += exp;
+      anyCompleted = true;
+
+      // Reset start time for next cycle
+      assignment.startTime = now;
+    }
+  });
+
+  if (anyCompleted) {
+    playerStats.gold += Math.floor(totalGold);
+    playerStats.exp += Math.floor(totalExp);
+
+    // Check for level ups
+    let leveledUp = false;
+    while (playerStats.exp >= playerStats.level * 20) {
+      playerStats.exp -= playerStats.level * 20;
+      playerStats.level++;
+      leveledUp = true;
+    }
+
+    // Update UI
+    updateStatsDisplay();
+    
+    // Save everything
+    savePlayerStats();
+    saveAssignedJobs();
+
+    // Show brief feedback
+    if (leveledUp) {
+      showFeedback(`🎉 Level Up! Now Level ${playerStats.level}!`);
+    }
+  }
+}
+
 // Calculate offline progress
 function calculateOfflineProgress() {
   const now = Date.now();
@@ -482,6 +551,17 @@ function completeJob(job) {
   }, 1000);
 }
 
+// Update stats display
+function updateStatsDisplay() {
+  const goldEl = document.getElementById('player-gold');
+  const expEl = document.getElementById('player-exp');
+  const levelEl = document.getElementById('player-level');
+
+  if (goldEl) goldEl.textContent = playerStats.gold;
+  if (expEl) expEl.textContent = playerStats.exp;
+  if (levelEl) levelEl.textContent = playerStats.level;
+}
+
 // Show inline feedback message
 function showFeedback(message, type = 'success') {
   const container = document.getElementById('jobs-content');
@@ -518,14 +598,7 @@ async function savePlayerStats() {
       level: playerStats.level
     });
 
-    // Update display
-    const goldEl = document.getElementById('player-gold');
-    const expEl = document.getElementById('player-exp');
-    const levelEl = document.getElementById('player-level');
-
-    if (goldEl) goldEl.textContent = playerStats.gold;
-    if (expEl) expEl.textContent = playerStats.exp;
-    if (levelEl) levelEl.textContent = playerStats.level;
+    updateStatsDisplay();
   } catch (err) {
     console.error("Error saving player stats:", err);
   }
@@ -544,14 +617,7 @@ async function loadPlayerStats() {
       playerStats.exp = data.exp || 0;
       playerStats.level = data.level || 1;
 
-      // Update display if elements exist
-      const goldEl = document.getElementById('player-gold');
-      const expEl = document.getElementById('player-exp');
-      const levelEl = document.getElementById('player-level');
-
-      if (goldEl) goldEl.textContent = playerStats.gold;
-      if (expEl) expEl.textContent = playerStats.exp;
-      if (levelEl) levelEl.textContent = playerStats.level;
+      updateStatsDisplay();
     }
   } catch (err) {
     console.error("Error loading player stats:", err);

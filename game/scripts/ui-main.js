@@ -88,16 +88,24 @@ jobsSubTab.onclick = () => switchSubTab("jobs");
 staffSubTab.onclick = () => switchSubTab("staff");
 equipmentSubTab.onclick = () => switchSubTab("equipment");
 
-// Initialize staff system when user logs in
+// Initialize staff and jobs systems when user logs in
 import { initStaffSystem } from './staff-system.js';
+import { initJobsSystem, refreshJobsUI } from './jobs-system.js';
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // Wait a bit for DOM to be ready, then initialize staff
-    setTimeout(() => {
-      console.log("Initializing staff system...");
-      initStaffSystem();
-      initJobsSystem();
-    }, 100);
+    // Wait a bit for DOM to be ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    console.log("Initializing game systems...");
+    
+    // Initialize staff first and wait for it to load data
+    await initStaffSystem();
+    
+    // Wait a bit more to ensure staff data is loaded
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Then initialize jobs
+    initJobsSystem();
   }
 });

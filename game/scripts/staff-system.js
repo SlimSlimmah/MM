@@ -19,10 +19,10 @@ export const staffState = {
 };
 
 // Initialize staff system
-export function initStaffSystem() {
+export async function initStaffSystem() {
   renderActiveSlots();
   renderJobSeekers();
-  loadStaffData();
+  await loadStaffData(); // Make this await
 }
 
 // Render active employee slots
