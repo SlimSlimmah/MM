@@ -417,7 +417,7 @@ function renderAssignedJobs() {
         </div>
       </div>
       <div style="background: #1a1a1a; height: 20px; border-radius: 10px; overflow: hidden;">
-        <div style="background: var(--accent); height: 100%; width: ${progress}%; transition: width 0.3s linear;"></div>
+        <div style="background: var(--accent); height: 100%; width: ${progress}%; transition: width 1s linear;"></div>
       </div>
       <div style="text-align: center; margin-top: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
         ${Math.floor(progress)}% • Repeating indefinitely
