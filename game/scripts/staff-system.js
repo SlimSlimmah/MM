@@ -3,7 +3,7 @@ import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 // Game state
-const staffState = {
+export const staffState = {
   activeSlots: 1, // Number of "on the books" slots
   onTheBooks: [], // Employee IDs currently active
   availableEmployees: [], // Employees owned but not assigned
@@ -108,6 +108,28 @@ function createEmployeeCard(employee, type) {
   return card;
 }
 
+// Show inline feedback message
+function showFeedback(message, type = 'success') {
+  const container = document.getElementById('active-slots').parentElement;
+  const feedback = document.createElement('div');
+  feedback.style.cssText = `
+    background: ${type === 'success' ? '#2a5a2a' : '#5a2a2a'};
+    color: ${type === 'success' ? '#90ee90' : '#ff9090'};
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    margin: 0.5rem 0;
+    text-align: center;
+    animation: fadeIn 0.3s;
+  `;
+  feedback.textContent = message;
+  container.insertBefore(feedback, container.firstChild);
+
+  setTimeout(() => {
+    feedback.style.animation = 'fadeOut 0.3s';
+    setTimeout(() => feedback.remove(), 300);
+  }, 2000);
+}
+
 // Hire employee from job seekers
 window.hireEmployee = function(employeeId) {
   const seeker = staffState.jobSeekers.find(s => s.id === employeeId);
@@ -129,13 +151,13 @@ window.hireEmployee = function(employeeId) {
   renderAvailableEmployees();
   saveStaffData();
 
-  alert(`${seeker.name} hired successfully!`);
+  showFeedback(`${seeker.name} hired successfully!`);
 };
 
 // Open modal to assign employee to slot
 function openAssignModal(slotIndex) {
   if (staffState.availableEmployees.length === 0) {
-    alert('No available employees to assign. Hire someone first!');
+    showFeedback('No available employees to assign. Hire someone first!', 'error');
     return;
   }
 
@@ -186,15 +208,14 @@ function assignEmployee(slotIndex, availableIndex) {
   renderActiveSlots();
   renderAvailableEmployees();
   saveStaffData();
+  
+  showFeedback(`${employee.name} assigned to work!`);
 }
 
 // Unassign employee from active slot
 function unassignEmployee(slotIndex) {
   const employee = staffState.onTheBooks[slotIndex];
   if (!employee) return;
-
-  const confirm = window.confirm(`Unassign ${employee.name}?`);
-  if (!confirm) return;
 
   // Remove from active
   staffState.onTheBooks.splice(slotIndex, 1);
@@ -206,6 +227,8 @@ function unassignEmployee(slotIndex) {
   renderActiveSlots();
   renderAvailableEmployees();
   saveStaffData();
+  
+  showFeedback(`${employee.name} unassigned`);
 }
 
 // Save staff data to Firestore

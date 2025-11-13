@@ -1,12 +1,14 @@
 // Jobs management system
 import { auth, db } from './firebase-init.js';
 import { doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { staffState } from './staff-system.js';
 
 // Job state
 const jobState = {
   currentJob: null,
   progress: 0,
-  intervalId: null
+  intervalId: null,
+  assignedJobs: {} // { employeeId: { jobId, startTime } }
 };
 
 // Player stats (will be loaded from Firebase)
@@ -30,15 +32,13 @@ const jobs = {
 // Initialize jobs system
 export function initJobsSystem() {
   loadPlayerStats();
+  loadAssignedJobs();
   renderJobsUI();
 }
 
 // Check if player has employees on the books
 function hasEmployeesAssigned() {
-  // We need to check the staff state from staff-system.js
-  // For now, we'll check the DOM to see if there are filled slots
-  const slots = document.querySelectorAll('.employee-slot.filled');
-  return slots.length > 0;
+  return staffState.onTheBooks && staffState.onTheBooks.length > 0;
 }
 
 // Render the jobs UI
@@ -71,6 +71,9 @@ function renderJobsUI() {
       </div>
 
       <h3>Available Jobs</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Click to start a job, or hold for 1 second to assign an employee
+      </p>
       <div id="job-list">
         <!-- Jobs will be rendered here -->
       </div>
@@ -86,10 +89,18 @@ function renderJobsUI() {
           </div>
         </div>
       </div>
+
+      <div id="assigned-jobs-container" style="margin-top: 1.5rem;">
+        <h3>Assigned Jobs</h3>
+        <div id="assigned-jobs-list">
+          <!-- Assigned jobs will be rendered here -->
+        </div>
+      </div>
     </div>
   `;
 
   renderJobList();
+  renderAssignedJobs();
 }
 
 // Render available jobs
@@ -109,6 +120,7 @@ function renderJobList() {
       margin-bottom: 0.5rem;
       cursor: pointer;
       transition: all 0.2s;
+      user-select: none;
     `;
 
     jobCard.innerHTML = `
@@ -124,7 +136,54 @@ function renderJobList() {
           <div style="color: #4a9eff; font-size: 0.85rem;">+${job.expReward} EXP</div>
         </div>
       </div>
+      <div id="hold-indicator-${job.id}" style="display: none; margin-top: 0.5rem; text-align: center; color: var(--accent);">
+        Hold to assign employee...
+      </div>
     `;
+
+    // Long press handling
+    let pressTimer = null;
+    let isLongPress = false;
+
+    const startPress = () => {
+      isLongPress = false;
+      const indicator = document.getElementById(`hold-indicator-${job.id}`);
+      if (indicator) indicator.style.display = 'block';
+      
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        openEmployeeAssignModal(job);
+      }, 1000);
+    };
+
+    const endPress = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      const indicator = document.getElementById(`hold-indicator-${job.id}`);
+      if (indicator) indicator.style.display = 'none';
+      
+      if (!isLongPress) {
+        startJob(job);
+      }
+    };
+
+    const cancelPress = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      const indicator = document.getElementById(`hold-indicator-${job.id}`);
+      if (indicator) indicator.style.display = 'none';
+      isLongPress = false;
+    };
+
+    jobCard.addEventListener('mousedown', startPress);
+    jobCard.addEventListener('mouseup', endPress);
+    jobCard.addEventListener('mouseleave', cancelPress);
+    jobCard.addEventListener('touchstart', startPress);
+    jobCard.addEventListener('touchend', endPress);
 
     jobCard.onmouseover = () => {
       jobCard.style.borderColor = 'var(--accent)';
@@ -136,21 +195,199 @@ function renderJobList() {
       jobCard.style.transform = 'translateY(0)';
     };
 
-    jobCard.onclick = () => startJob(job);
-
     container.appendChild(jobCard);
   });
+}
+
+// Open modal to assign employee to job
+function openEmployeeAssignModal(job) {
+  if (staffState.onTheBooks.length === 0) {
+    showFeedback('No employees on the books!', 'error');
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal active';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h3>Assign Employee to ${job.name}</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+        This employee will work on this job indefinitely
+      </p>
+      <div class="employee-list" id="modal-employee-list"></div>
+      <div class="modal-buttons">
+        <button onclick="this.closest('.modal').remove()">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const listContainer = modal.querySelector('#modal-employee-list');
+  staffState.onTheBooks.forEach((emp) => {
+    // Check if already assigned
+    const isAssigned = Object.keys(jobState.assignedJobs).includes(emp.id);
+    
+    const card = document.createElement('div');
+    card.className = 'employee-card';
+    card.style.cssText = isAssigned ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;';
+    
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${emp.icon}</div>
+        <div class="card-name">${emp.name}</div>
+      </div>
+      <div class="card-stats">Efficiency: ${emp.efficiency}x</div>
+      ${isAssigned ? '<div style="color: var(--accent); font-size: 0.8rem;">Already Assigned</div>' : ''}
+    `;
+
+    if (!isAssigned) {
+      card.onclick = () => {
+        assignEmployeeToJob(emp, job);
+        modal.remove();
+      };
+    }
+
+    listContainer.appendChild(card);
+  });
+
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  };
+}
+
+// Assign employee to work on job indefinitely
+function assignEmployeeToJob(employee, job) {
+  jobState.assignedJobs[employee.id] = {
+    jobId: job.id,
+    startTime: Date.now(),
+    employeeName: employee.name,
+    employeeIcon: employee.icon,
+    efficiency: employee.efficiency
+  };
+
+  saveAssignedJobs();
+  renderAssignedJobs();
+  showFeedback(`${employee.name} assigned to ${job.name}!`);
+}
+
+// Render assigned jobs
+function renderAssignedJobs() {
+  const container = document.getElementById('assigned-jobs-list');
+  if (!container) return;
+
+  const assignedCount = Object.keys(jobState.assignedJobs).length;
+  
+  if (assignedCount === 0) {
+    container.innerHTML = '<p style="opacity: 0.6; font-size: 0.9rem;">No assigned jobs</p>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  Object.entries(jobState.assignedJobs).forEach(([employeeId, assignment]) => {
+    const job = jobs[assignment.jobId];
+    if (!job) return;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: #2a2a2a;
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+    `;
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+            <span style="font-size: 1.2rem;">${assignment.employeeIcon}</span>
+            <span style="font-weight: bold;">${assignment.employeeName}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            Working on ${job.name}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--accent); margin-top: 0.3rem;">
+            ⚙️ Running indefinitely
+          </div>
+        </div>
+        <button onclick="window.unassignJob('${employeeId}')" style="padding: 0.5rem 1rem; margin: 0;">
+          Stop
+        </button>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// Unassign job
+window.unassignJob = function(employeeId) {
+  const assignment = jobState.assignedJobs[employeeId];
+  if (assignment) {
+    delete jobState.assignedJobs[employeeId];
+    saveAssignedJobs();
+    renderAssignedJobs();
+    showFeedback(`${assignment.employeeName} unassigned from job`);
+  }
+};
+
+// Calculate offline progress
+function calculateOfflineProgress() {
+  const now = Date.now();
+  let totalGold = 0;
+  let totalExp = 0;
+  let completedJobs = 0;
+
+  Object.entries(jobState.assignedJobs).forEach(([employeeId, assignment]) => {
+    const job = jobs[assignment.jobId];
+    if (!job) return;
+
+    const elapsed = now - assignment.startTime;
+    const jobsCompleted = Math.floor(elapsed / job.duration);
+    
+    if (jobsCompleted > 0) {
+      totalGold += jobsCompleted * job.goldReward * assignment.efficiency;
+      totalExp += jobsCompleted * job.expReward;
+      completedJobs += jobsCompleted;
+
+      // Update start time to account for completed jobs
+      assignment.startTime = now - (elapsed % job.duration);
+    }
+  });
+
+  if (completedJobs > 0) {
+    playerStats.gold += Math.floor(totalGold);
+    playerStats.exp += Math.floor(totalExp);
+
+    // Check for level ups
+    let leveledUp = false;
+    while (playerStats.exp >= playerStats.level * 20) {
+      playerStats.exp -= playerStats.level * 20;
+      playerStats.level++;
+      leveledUp = true;
+    }
+
+    savePlayerStats();
+    saveAssignedJobs();
+
+    // Show offline progress notification
+    showFeedback(`Offline Progress: ${completedJobs} jobs completed! +${Math.floor(totalGold)} Gold, +${Math.floor(totalExp)} EXP${leveledUp ? ', Level Up!' : ''}`);
+  }
 }
 
 // Start a job
 function startJob(job) {
   if (jobState.currentJob) {
-    alert('A job is already in progress!');
+    showFeedback('A job is already in progress!', 'error');
     return;
   }
 
   if (!hasEmployeesAssigned()) {
-    alert('You need to assign employees first!');
+    showFeedback('You need to assign employees first!', 'error');
     renderJobsUI();
     return;
   }
@@ -245,6 +482,30 @@ function completeJob(job) {
   }, 1000);
 }
 
+// Show inline feedback message
+function showFeedback(message, type = 'success') {
+  const container = document.getElementById('jobs-content');
+  if (!container) return;
+  
+  const feedback = document.createElement('div');
+  feedback.style.cssText = `
+    background: ${type === 'success' ? '#2a5a2a' : '#5a2a2a'};
+    color: ${type === 'success' ? '#90ee90' : '#ff9090'};
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    margin: 0.5rem 1rem;
+    text-align: center;
+    animation: fadeIn 0.3s;
+  `;
+  feedback.textContent = message;
+  container.insertBefore(feedback, container.firstChild);
+
+  setTimeout(() => {
+    feedback.style.animation = 'fadeOut 0.3s';
+    setTimeout(() => feedback.remove(), 300);
+  }, 3000);
+}
+
 // Save player stats to Firebase
 async function savePlayerStats() {
   const user = auth.currentUser;
@@ -294,6 +555,39 @@ async function loadPlayerStats() {
     }
   } catch (err) {
     console.error("Error loading player stats:", err);
+  }
+}
+
+// Save assigned jobs
+async function saveAssignedJobs() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    await updateDoc(doc(db, "players", user.uid), {
+      assignedJobs: jobState.assignedJobs
+    });
+  } catch (err) {
+    console.error("Error saving assigned jobs:", err);
+  }
+}
+
+// Load assigned jobs
+async function loadAssignedJobs() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    const snapshot = await getDoc(doc(db, "players", user.uid));
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      if (data.assignedJobs) {
+        jobState.assignedJobs = data.assignedJobs;
+        calculateOfflineProgress();
+      }
+    }
+  } catch (err) {
+    console.error("Error loading assigned jobs:", err);
   }
 }
 
